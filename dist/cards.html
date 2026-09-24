@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>字词过关卡（二上第二单元）</title>
+<style>
+  @page { size: A4; margin: 12mm 12mm 14mm 12mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif; color:#333; font-size:10.5pt; line-height:1.55; }
+  .page { page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+
+  h1 { font-size:16pt; color:#c2456f; margin-bottom:1mm; }
+  .sub { color:#888; font-size:9pt; margin-bottom:4mm; }
+  .meta { margin-bottom:4mm; font-size:10.5pt; }
+  .meta .line { border-bottom:1pt solid #999; display:inline-block; min-width:26mm; }
+
+  h2 { font-size:12pt; color:#c2456f; border-left:3mm solid #f2b8c6; padding-left:2.5mm; margin:5mm 0 2.5mm 0; }
+  h2.first { margin-top:2mm; }
+
+  .rules { background:#fdf3f5; border:1pt solid #f2c7d3; border-radius:2mm; padding:3mm 4mm; }
+  .rules li { margin-left:5mm; margin-bottom:0.8mm; }
+
+  table.rec { width:100%; border-collapse:collapse; }
+  table.rec th, table.rec td { border:0.8pt solid #bbb; padding:1.4mm 2mm; font-size:9.5pt; text-align:center; }
+  table.rec th { background:#fdf3f5; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  table.rec td.name { text-align:left; }
+  table.rec td .g { width:6mm; height:6mm; }
+
+  .streak { display:flex; flex-wrap:wrap; gap:2.2mm; margin-top:1.5mm; }
+  .streak .dot { width:7mm; height:7mm; border:1pt solid #d99; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8pt; color:#d99; }
+
+  /* 田字格 */
+  .g { width:12mm; height:12mm; border:1.2pt solid #a9a9a9; display:inline-block; position:relative; border-radius:1mm;
+       -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .g::before { content:""; position:absolute; left:50%; top:0.8mm; bottom:0.8mm; width:0.4mm; transform:translateX(-50%); background:#f2b8c6;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .g::after { content:""; position:absolute; top:50%; left:0.8mm; right:0.8mm; height:0.4mm; transform:translateY(-50%); background:#f2b8c6;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  .guan { margin-bottom:6.5mm; }
+  .guan-title { font-weight:700; font-size:11pt; color:#c2456f; margin-bottom:2mm; }
+  .guan-title .tag { font-weight:400; color:#999; font-size:9pt; margin-left:2mm; }
+  .items { display:flex; flex-wrap:wrap; gap:4mm 7mm; }
+  .item { text-align:center; }
+  .item .py { font-family:"Times New Roman",Georgia,"DejaVu Serif",serif; font-size:10.5pt; color:#444; margin-bottom:1mm; letter-spacing:0.3px; }
+  .cells { display:flex; gap:1.2mm; }
+
+  .bank { margin-bottom:2mm; }
+  .bank span { display:inline-block; border:1pt solid #d9a; border-radius:1mm; padding:0.5mm 2.5mm; margin-right:2mm; background:#fdfaf2; }
+  .xuan-item { display:inline-block; margin:0 5mm 2mm 0; }
+  .xuan-item .kh { display:inline-block; width:8mm; border-bottom:1pt solid #999; }
+
+  .liang-line { margin-bottom:1.6mm; }
+  .liang-line .kh { display:inline-block; width:8mm; border-bottom:1pt solid #999; text-align:center; }
+
+  .zy { display:flex; flex-wrap:wrap; gap:5mm 8mm; margin-top:2mm; }
+  .zy .cell { text-align:center; }
+  .zy .zi { font-family:"Kaiti SC","STKaiti","KaiTi",serif; font-size:20pt; line-height:1.2; }
+  .zy .blank { width:12mm; height:5mm; border-bottom:1pt solid #999; margin:1mm auto 0 auto; }
+
+  .birds { margin:2mm 0; }
+  .birds span { display:inline-block; font-family:"Kaiti SC","STKaiti","KaiTi",serif; font-size:13pt; border:0.8pt solid #ccc; border-radius:1mm; padding:0.5mm 2.5mm; margin:0 2mm 2mm 0; background:#fbfbfb; }
+  .house { border:1pt dashed #c9a; border-radius:2mm; padding:2mm 3mm 2.5mm 3mm; margin-bottom:2mm; }
+  .house .cells { margin-top:1.5mm; }
+  .house .cells .g { width:9mm; height:9mm; }
+
+  .duci span { display:inline-block; border:0.8pt solid #ccc; border-radius:1mm; padding:1mm 2.8mm; margin:0 2mm 2mm 0; background:#fbfbfb; font-size:11pt; }
+
+  .note { color:#888; font-size:9pt; margin-top:2mm; }
+  .answer { font-size:10pt; }
+  .answer h2 { border-left-color:#b5cf9f; color:#4c7a2e; }
+  .answer li { margin-left:6mm; margin-bottom:1mm; }
+  .tip { background:#f3f8ec; border:1pt solid #cfe3b8; border-radius:2mm; padding:2.5mm 3.5mm; margin-bottom:4mm; font-size:9.5pt; }
+
+  /* ---- 屏幕模式工具条与纸张感（打印时不生效/隐藏） ---- */
+  .toolbar { position:sticky; top:0; z-index:9; display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:#fdf3f5; border-bottom:1pt solid #f2c7d3; padding:10px 16px; font-size:13px; color:#c2456f; }
+  .toolbar button { background:#c2456f; color:#fff; border:none; border-radius:6px; padding:7px 14px; font-size:13px; cursor:pointer; }
+  .toolbar a { color:#c2456f; }
+  .toolbar .tip { color:#8b857a; font-size:12px; }
+  @media screen {
+    body { background:#f3eef0; padding:14px 8px; }
+    .page { background:#fff; max-width:186mm; margin:0 auto 16px; padding:8mm 12mm; box-shadow:0 2px 10px rgba(0,0,0,.12); border-radius:4px; }
+  }
+  @media print { .toolbar { display:none !important; } body { background:#fff; padding:0; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <a href="/">← 返回智习岛</a>
+  <button onclick="window.print()">🖨 打印 / 存为 PDF</button>
+  <span class="tip">打印对话框里选「另存为 PDF」可得电子版 · 答案页（最后一页）家长收好，别让孩子看到</span>
+</div>
+
+<!-- ============ 第 1 页：说明 + 记录表 ============ -->
+<div class="page">
+  <h1>字词过关卡 · 二上第二单元</h1>
+  <div class="sub">依据：2026-09《语文二上第二单元巩固练》卷面错词整理 ｜ 共 25 个书写词 + 5 个小关</div>
+
+  <div class="meta">姓名：<span class="line"></span>　　本轮起止：<span class="line" style="min-width:16mm"></span> 月 <span class="line" style="min-width:10mm"></span> 日 — <span class="line" style="min-width:16mm"></span> 月 <span class="line" style="min-width:10mm"></span> 日</div>
+
+  <h2 class="first">过关规矩（贴在书桌前）</h2>
+  <ol class="rules">
+    <li><b>每天一次，只闯一关</b>，5–10 分钟，绝不加量。</li>
+    <li><b>全对才算过关</b>：错 1 个字，这一关明天重来。</li>
+    <li>写完<b>立刻核对</b>（答案在最后一页，家长保管）。</li>
+    <li>不过关不批评——量多不如全对，全对才养"不能错"的气质。</li>
+    <li>连胜 3 天，兑现一个小奖励。</li>
+  </ol>
+
+  <h2>过关记录表（全对画 ☆ 并写日期）</h2>
+  <table class="rec">
+    <tr><th style="width:34%">关卡</th><th>第 1 次</th><th>第 2 次</th><th>第 3 次</th><th>过关 ☆</th></tr>
+    <tr><td class="name">第1关 · 卷面错词Ⅰ（松柏/初升…）</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">第2关 · 卷面错词Ⅱ（丛林/农事…）</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">第3关 · yuán / huà 同音家族</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">第4关 · 树名关（树之歌）</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">第5关 · 鸟儿关（拍手歌）</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">选字关A · 园 员 元 圆</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">选字关B · 化 画 话</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">选字关C · 辛 和 幸</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">第6关 · 量词关</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">注音关 · 港翠枫杉锦灵桦杏</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">偏旁关 · 隹 和 鸟</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">听辨关 · 前鼻音/后鼻音（口头）</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td class="name">读词关 · 秋天词语（认读）</td><td></td><td></td><td></td><td></td></tr>
+  </table>
+
+  <h2>连胜格（每天全对 1 关涂 1 格，断了一天就从头数）</h2>
+  <div class="streak">
+    <span class="dot">1</span><span class="dot">2</span><span class="dot">3</span><span class="dot">4</span><span class="dot">5</span><span class="dot">6</span><span class="dot">7</span><span class="dot">8</span><span class="dot">9</span><span class="dot">10</span><span class="dot">11</span><span class="dot">12</span><span class="dot">13</span><span class="dot">14</span>
+    <span class="dot">15</span><span class="dot">16</span><span class="dot">17</span><span class="dot">18</span><span class="dot">19</span><span class="dot">20</span><span class="dot">21</span><span class="dot">22</span><span class="dot">23</span><span class="dot">24</span><span class="dot">25</span><span class="dot">26</span><span class="dot">27</span><span class="dot">28</span>
+  </div>
+  <div class="note">小提示：同一关连续两天全对，可以一天闯两关；卡片先从第 1 关开始（全是这次卷子写错的词）。</div>
+</div>
+
+<!-- ============ 第 2 页：书写关 1–4 ============ -->
+<div class="page">
+  <h2 class="first">看拼音，写词语</h2>
+
+  <div class="guan">
+    <div class="guan-title">第 1 关 <span class="tag">卷面错词Ⅰ</span></div>
+    <div class="items">
+      <div class="item"><div class="py">sōng bǎi</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">yáng shù</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">xīn kǔ</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">chū shēng</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">hóng lǐng jīn</div><div class="cells"><span class="g"></span><span class="g"></span><span class="g"></span></div></div>
+    </div>
+  </div>
+
+  <div class="guan">
+    <div class="guan-title">第 2 关 <span class="tag">卷面错词Ⅱ</span></div>
+    <div class="items">
+      <div class="item"><div class="py">cóng lín</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">dào gǔ</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">guī lái</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">xià jì</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">nóng shì</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+    </div>
+  </div>
+
+  <div class="guan">
+    <div class="guan-title">第 3 关 <span class="tag">yuán / huà 同音家族</span></div>
+    <div class="items">
+      <div class="item"><div class="py">huā yuán</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">duì yuán</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">yuán dàn</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">biàn huà</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">shuō huà</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+    </div>
+  </div>
+
+  <div class="guan">
+    <div class="guan-title">第 4 关 <span class="tag">树名关（《树之歌》）</span></div>
+    <div class="items">
+      <div class="item"><div class="py">fēng shù</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">shuǐ shān</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">huà shù</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">yín xìng</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">jīn guì</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+    </div>
+  </div>
+
+  <div class="note">用法：家长读词语（或孩子看拼音自己写），每字一格。写完立刻翻到最后一页对答案。</div>
+</div>
+
+<!-- ============ 第 3 页：书写关5 + 选字 + 量词 ============ -->
+<div class="page">
+  <div class="guan">
+    <div class="guan-title">第 5 关 <span class="tag">鸟儿关（《拍手歌》）</span></div>
+    <div class="items">
+      <div class="item"><div class="py">má què</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">lǎo yīng</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">jǐn jī</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">tiān é</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+      <div class="item"><div class="py">dà yàn</div><div class="cells"><span class="g"></span><span class="g"></span></div></div>
+    </div>
+  </div>
+
+  <h2>选字关：从字卡里选一个填进（　）里</h2>
+
+  <div class="guan">
+    <div class="guan-title">选字关 A <span class="tag">yuán 四兄弟</span></div>
+    <div class="bank">字卡：<span>园</span><span>员</span><span>元</span><span>圆</span></div>
+    <div class="xuan-item">公（<span class="kh"></span>）</div>
+    <div class="xuan-item">队（<span class="kh"></span>）</div>
+    <div class="xuan-item">（<span class="kh"></span>）宵</div>
+    <div class="xuan-item">（<span class="kh"></span>）形</div>
+  </div>
+
+  <div class="guan">
+    <div class="guan-title">选字关 B <span class="tag">huà 三姐妹</span></div>
+    <div class="bank">字卡：<span>化</span><span>画</span><span>话</span></div>
+    <div class="xuan-item">变（<span class="kh"></span>）</div>
+    <div class="xuan-item">（<span class="kh"></span>）图</div>
+    <div class="xuan-item">说（<span class="kh"></span>）</div>
+    <div class="xuan-item">童（<span class="kh"></span>）</div>
+  </div>
+
+  <div class="guan">
+    <div class="guan-title">选字关 C <span class="tag">xīn 和 xìng</span></div>
+    <div class="bank">字卡：<span>辛</span><span>幸</span></div>
+    <div class="xuan-item">（<span class="kh"></span>）苦</div>
+    <div class="xuan-item">（<span class="kh"></span>）福</div>
+    <div class="xuan-item">（<span class="kh"></span>）好</div>
+  </div>
+
+  <h2>第 6 关 · 量词关</h2>
+  <div class="liang-line">一（<span class="kh"></span>）石桥　　一（<span class="kh"></span>）稻田　　一（<span class="kh"></span>）鱼塘</div>
+  <div class="liang-line">一（<span class="kh"></span>）翠竹　　一（<span class="kh"></span>）松树　　一（<span class="kh"></span>）河　　一（<span class="kh"></span>）小木屋</div>
+  <div class="note">这次卷子把"块"和"方"写混了，重点盯这两格。</div>
+</div>
+
+<!-- ============ 第 4 页：注音 + 偏旁 + 听辨 + 读词 ============ -->
+<div class="page">
+  <h2 class="first">注音关：给下面的字标拼音</h2>
+  <div class="zy">
+    <div class="cell"><div class="zi">港</div><div class="blank"></div></div>
+    <div class="cell"><div class="zi">翠</div><div class="blank"></div></div>
+    <div class="cell"><div class="zi">枫</div><div class="blank"></div></div>
+    <div class="cell"><div class="zi">杉</div><div class="blank"></div></div>
+    <div class="cell"><div class="zi">锦</div><div class="blank"></div></div>
+    <div class="cell"><div class="zi">灵</div><div class="blank"></div></div>
+    <div class="cell"><div class="zi">桦</div><div class="blank"></div></div>
+    <div class="cell"><div class="zi">杏</div><div class="blank"></div></div>
+  </div>
+
+  <h2>偏旁关：把字送回家（这次"隹"写成了"佳"、"鸟"丢了点）</h2>
+  <div class="birds"><span>麻雀</span><span>老鹰</span><span>锦鸡</span><span>天鹅</span><span>大雁</span><span>黄鹂</span></div>
+  <div class="house">隹字旁（写单字）：
+    <div class="cells"><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span></div>
+  </div>
+  <div class="house">鸟字旁（写单字）：
+    <div class="cells"><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span></div>
+  </div>
+
+  <h2>听辨关：家长读，孩子说"前鼻音"还是"后鼻音"（口头，不写）</h2>
+  <div class="birds"><span>金 jīn</span><span>星 xīng</span><span>心 xīn</span><span>明 míng</span><span>林 lín</span><span>灵 líng</span><span>民 mín</span><span>京 jīng</span></div>
+  <div class="note">打乱顺序读，读对 6 个算过关。杭州小朋友 en/eng、in/ing 容易混，练耳朵比罚写管用。</div>
+
+  <h2>读词关：1 分钟把这些词读顺（认读，不写）</h2>
+  <div class="duci">
+    <span>一叶知秋</span><span>丹桂飘香</span><span>层林尽染</span><span>红叶似火</span>
+    <span>秋雨绵绵</span><span>秋风习习</span><span>秋高气爽</span><span>天高云淡</span>
+    <span>五谷丰登</span><span>瓜果飘香</span><span>春华秋实</span><span>硕果累累</span>
+  </div>
+</div>
+
+<!-- ============ 第 5 页：答案（家长保管） ============ -->
+<div class="page answer">
+  <div class="tip">📌 这一页请家长收好，不要钉在孩子的卡片上。每次闯关后立刻核对，全对就打 ☆。</div>
+
+  <h2>看拼音写词语 · 答案</h2>
+  <ul>
+    <li><b>第1关：</b>松柏、杨树、辛苦、初升、红领巾</li>
+    <li><b>第2关：</b>丛林、稻谷、归来、夏季、农事</li>
+    <li><b>第3关：</b>花园、队员、元旦、变化、说话</li>
+    <li><b>第4关：</b>枫树、水杉、桦树、银杏、金桂</li>
+    <li><b>第5关：</b>麻雀、老鹰、锦鸡、天鹅、大雁</li>
+  </ul>
+
+  <h2>选字关 · 答案</h2>
+  <ul>
+    <li><b>A：</b>公（园）、队（员）、（元）宵、（圆）形</li>
+    <li><b>B：</b>变（化）、（画）图、说（话）、童（话）</li>
+    <li><b>C：</b>（辛）苦、（幸）福、（幸）好</li>
+  </ul>
+
+  <h2>量词关 · 答案</h2>
+  <ul>
+    <li>一（座）石桥　一（块）稻田　一（方）鱼塘　一（丛）翠竹　一（棵）松树　一（条）河　一（个）小木屋</li>
+  </ul>
+
+  <h2>注音关 · 答案</h2>
+  <ul>
+    <li>港 gǎng　翠 cuì　枫 fēng　杉 shān　锦 jǐn　灵 líng　桦 huà　杏 xìng</li>
+  </ul>
+
+  <h2>偏旁关 · 答案</h2>
+  <ul>
+    <li><b>隹字旁：</b>雀、雁（另有：集、难、准——认一认即可）</li>
+    <li><b>鸟字旁：</b>鹰、鸡、鹅、鹂</li>
+  </ul>
+
+  <h2>听辨关 · 答案</h2>
+  <ul>
+    <li>前鼻音：金 jīn、心 xīn、林 lín、民 mín</li>
+    <li>后鼻音：星 xīng、明 míng、灵 líng、京 jīng</li>
+  </ul>
+
+  <h2>使用节奏建议</h2>
+  <ul>
+    <li>第一周：每天 1 关，从第 1 关顺序往后；哪关错了，第二天先重闯那关。</li>
+    <li>全部过关后：随机抽 2 关混闯，连续 3 天全对，本轮字词毕业。</li>
+    <li>下次单元练后，把新错词做进"第 1 关"，老词降级成每周复查一次。</li>
+  </ul>
+</div>
+
+</body>
+</html>

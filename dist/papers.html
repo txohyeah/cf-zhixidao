@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智习岛 · 考卷库</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC","Microsoft YaHei",sans-serif; background:#f6f4ef; color:#3d3a34; padding-bottom:60px; }
+  header { background:linear-gradient(135deg,#ff9a62,#ff6f91); color:#fff; padding:18px 20px 14px; }
+  .top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; max-width:880px; margin:0 auto; }
+  .brand { font-size:22px; font-weight:700; }
+  .brand small { font-weight:400; opacity:.85; font-size:13px; margin-left:8px; }
+  .top .acts button { background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.5); color:#fff; border-radius:8px; padding:5px 12px; font-size:13px; cursor:pointer; margin-left:6px; }
+  main { max-width:880px; margin:0 auto; padding:16px; }
+  .bar { display:flex; align-items:baseline; justify-content:space-between; margin:6px 0 12px; flex-wrap:wrap; gap:8px; }
+  .bar h2 { font-size:15px; color:#c2571f; }
+  .bar .cnt { font-size:12px; color:#a29b8e; }
+  .btn-new { background:#ff6f91; color:#fff; border:0; border-radius:8px; padding:8px 16px; font-size:13px; cursor:pointer; font-weight:600; }
+  .paper { background:#fff; border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(90,70,40,.08); }
+  .paper .hd { display:flex; align-items:baseline; flex-wrap:wrap; gap:6px; }
+  .paper .pt { font-weight:700; font-size:14px; }
+  .paper .pd { font-size:12px; color:#a29b8e; }
+  .tag { font-size:11px; border-radius:6px; padding:1px 7px; font-weight:400; }
+  .t-subj { background:#e8f0fe; color:#3b6fc9; }
+  .t-term { background:#fff1e3; color:#c2571f; }
+  .t-src { background:#eee9df; color:#6d675c; }
+  .paper .ops { margin-left:auto; display:flex; gap:6px; }
+  .paper .ops button { border:0; border-radius:6px; padding:3px 10px; font-size:12px; cursor:pointer; }
+  .op-edit { background:#efe9dd; color:#6d675c; }
+  .op-del { background:#fdecec; color:#c0392b; }
+  .paper .pa { font-size:13px; line-height:1.7; color:#57524a; margin-top:8px; }
+  .paper .pa b { color:#c2571f; }
+  .paper .pa ul { margin:4px 0 4px 18px; }
+  .more { text-align:center; margin:14px 0; }
+  .more button { background:#efe9dd; color:#6d675c; border:0; border-radius:8px; padding:9px 24px; font-size:13px; cursor:pointer; }
+  .empty { color:#a29b8e; font-size:13px; }
+  .modal-mask { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:9; align-items:center; justify-content:center; padding:16px; }
+  .modal { background:#fff; border-radius:14px; padding:20px; width:520px; max-width:100%; max-height:90vh; overflow:auto; }
+  .modal h3 { font-size:15px; margin-bottom:12px; }
+  .modal label { display:block; font-size:12px; color:#8b857a; margin:8px 0 4px; }
+  .modal input, .modal select, .modal textarea { width:100%; padding:9px 10px; border:1px solid #ddd5c6; border-radius:8px; font-size:14px; font-family:inherit; }
+  .modal textarea { min-height:160px; line-height:1.6; resize:vertical; }
+  .modal .row2 { display:flex; gap:10px; }
+  .modal .row2 > div { flex:1; }
+  .modal .btns { display:flex; gap:8px; margin-top:14px; }
+  .modal .btns button { flex:1; padding:9px 0; border:0; border-radius:8px; font-size:14px; cursor:pointer; }
+  .msg { font-size:12px; min-height:16px; margin-bottom:8px; }
+  .msg.err { color:#d33; } .msg.ok { color:#2a8f4d; }
+  .hint { font-size:11px; color:#a29b8e; margin-top:4px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="brand">考卷库<small>智习岛 · 每张卷都留档</small></div>
+    <div class="acts">
+      <span id="who" style="font-size:13px;opacity:.9;margin-right:4px"></span>
+      <button onclick="location.href='/'">返回总览</button>
+      <button onclick="logout()">退出</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="bar">
+    <h2>考卷时间线 <span class="cnt" id="cnt"></span></h2>
+    <button class="btn-new" id="btnNew" onclick="openCreate()">＋ 新增考卷</button>
+  </div>
+  <div id="list"></div>
+  <div class="more" id="more" style="display:none"><button onclick="loadMore()">加载更早的考卷 ▾</button></div>
+</main>
+
+<div class="modal-mask" id="mask">
+  <div class="modal">
+    <h3 id="mTitle">新增考卷</h3>
+    <div class="msg" id="mMsg"></div>
+    <label>日期</label>
+    <input type="date" id="fDate">
+    <label>标题（如：二上第二单元巩固练）</label>
+    <input type="text" id="fTitle" maxlength="120">
+    <div class="row2">
+      <div>
+        <label>科目</label>
+        <select id="fSubject">
+          <option value="chinese">语文</option>
+          <option value="math">数学</option>
+          <option value="english">英语</option>
+        </select>
+      </div>
+      <div>
+        <label>学期</label>
+        <input type="text" id="fTerm" maxlength="20" placeholder="2026秋">
+      </div>
+    </div>
+    <label>考卷分析（markdown：**加粗**、- 列表）</label>
+    <textarea id="fMd" placeholder="错在哪里 / 为什么错 / 接下来怎么练……"></textarea>
+    <div class="hint">留空也可以，之后随时编辑补充</div>
+    <div class="btns">
+      <button style="background:#efe9dd;color:#6d675c" onclick="closeModal()">取消</button>
+      <button class="btn-new" onclick="save()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let ME = null, OFFSET = 0, HAS_MORE = false, TOTAL = 0, EDIT_ID = null;
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function md(s){
+  let t = esc(s);
+  const lines = t.split('\n'); let out=[], inUl=false;
+  for (const ln of lines){
+    let l = ln;
+    l = l.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+    if (/^- /.test(l)){ if(!inUl){out.push('<ul>');inUl=true;} out.push('<li>'+l.slice(2)+'</li>'); }
+    else { if(inUl){out.push('</ul>');inUl=false;} if(l.trim()) out.push(l+'<br>'); }
+  }
+  if(inUl) out.push('</ul>');
+  return out.join('');
+}
+const SUBJ = { chinese:'语文', math:'数学', english:'英语' };
+
+async function whoami(){
+  const d = await (await fetch('/api/me')).json();
+  ME = d.authed ? d : null;
+  document.getElementById('who').textContent = ME ? (ME.username + (ME.role==='parent'?'（家长）':'')) : '';
+  const isParent = ME && ME.role === 'parent';
+  document.getElementById('btnNew').style.display = isParent ? '' : 'none';
+}
+function paperHtml(p){
+  const isParent = ME && ME.role === 'parent';
+  const tags = `<span class="tag t-subj">${SUBJ[p.subject] || esc(p.subject)}</span><span class="tag t-term">${esc(p.term)}</span>` +
+               (p.source === 'cuoti' ? '<span class="tag t-src">来自错题库</span>' : '');
+  const ops = isParent ? `<span class="ops">
+      <button class="op-edit" onclick='openEdit(${esc(JSON.stringify(p))})'>编辑</button>
+      <button class="op-del" onclick="del(${p.id})">删除</button></span>` : '';
+  return `<div class="paper">
+    <div class="hd"><span class="pt">${esc(p.title)}</span>${tags}<span class="pd">${esc(p.date)}</span>${ops}</div>
+    ${p.analysis_md ? `<div class="pa">${md(p.analysis_md)}</div>` : ''}
+  </div>`;
+}
+async function load(reset){
+  if (reset) OFFSET = 0;
+  const r = await fetch('/api/papers?limit=20&offset=' + OFFSET);
+  if (r.status === 401) { location.href = '/login'; return; }
+  const d = await r.json();
+  if (!d.ok) { document.getElementById('list').innerHTML = '<div class="empty">' + esc(d.error || '加载失败') + '</div>'; return; }
+  TOTAL = d.total; HAS_MORE = d.has_more;
+  document.getElementById('cnt').textContent = '共 ' + TOTAL + ' 张';
+  const html = d.papers.map(paperHtml).join('');
+  if (reset) document.getElementById('list').innerHTML = html;
+  else document.getElementById('list').insertAdjacentHTML('beforeend', html);
+  document.getElementById('more').style.display = HAS_MORE ? '' : 'none';
+  if (!TOTAL) document.getElementById('list').innerHTML = '<div class="empty">还没有考卷记录，点右上角「＋ 新增考卷」录入第一张</div>';
+}
+function loadMore(){ OFFSET += 20; load(false); }
+function openCreate(){
+  EDIT_ID = null;
+  document.getElementById('mTitle').textContent = '新增考卷';
+  document.getElementById('fDate').value = new Date(Date.now() + 8*3600*1000).toISOString().slice(0,10);
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fSubject').value = 'chinese';
+  document.getElementById('fTerm').value = '2026秋';
+  document.getElementById('fMd').value = '';
+  document.getElementById('mMsg').textContent = '';
+  document.getElementById('mask').style.display = 'flex';
+}
+function openEdit(p){
+  EDIT_ID = p.id;
+  document.getElementById('mTitle').textContent = '编辑考卷';
+  document.getElementById('fDate').value = p.date;
+  document.getElementById('fTitle').value = p.title;
+  document.getElementById('fSubject').value = p.subject || 'chinese';
+  document.getElementById('fTerm').value = p.term || '2026秋';
+  document.getElementById('fMd').value = p.analysis_md || '';
+  document.getElementById('mMsg').textContent = '';
+  document.getElementById('mask').style.display = 'flex';
+}
+function closeModal(){ document.getElementById('mask').style.display = 'none'; }
+async function save(){
+  const msg = document.getElementById('mMsg');
+  const body = {
+    date: document.getElementById('fDate').value,
+    title: document.getElementById('fTitle').value.trim(),
+    subject: document.getElementById('fSubject').value,
+    term: document.getElementById('fTerm').value.trim(),
+    analysis_md: document.getElementById('fMd').value
+  };
+  if (!body.title) { msg.textContent = '标题必填'; msg.className = 'msg err'; return; }
+  const url = EDIT_ID ? '/api/papers/' + EDIT_ID : '/api/papers';
+  const r = await fetch(url, { method: EDIT_ID ? 'PUT' : 'POST',
+    headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const d = await r.json();
+  if (d.ok) { closeModal(); load(true); }
+  else { msg.textContent = d.error || '保存失败'; msg.className = 'msg err'; }
+}
+async function del(id){
+  if (!confirm('确定删除这张考卷？删除后不可恢复')) return;
+  const r = await fetch('/api/papers/' + id, { method: 'DELETE' });
+  const d = await r.json();
+  if (!d.ok) alert(d.error || '删除失败');
+  load(true);
+}
+async function logout(){ await fetch('/api/logout', {method:'POST'}); location.href='/login'; }
+whoami().then(() => load(true));
+</script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智习岛</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC","Microsoft YaHei",sans-serif; background:#f6f4ef; color:#3d3a34; padding-bottom:60px; }
+  header { background:linear-gradient(135deg,#ff9a62,#ff6f91); color:#fff; padding:18px 20px 14px; }
+  .top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; max-width:880px; margin:0 auto; }
+  .brand { font-size:22px; font-weight:700; }
+  .brand small { font-weight:400; opacity:.85; font-size:13px; margin-left:8px; }
+  .top .acts button { background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.5); color:#fff; border-radius:8px; padding:5px 12px; font-size:13px; cursor:pointer; margin-left:6px; }
+  .streak-band { max-width:880px; margin:0 auto; display:flex; align-items:baseline; gap:10px; margin-top:6px; }
+  .streak-band .num { font-size:30px; font-weight:800; }
+  .streak-band .lbl { font-size:13px; opacity:.9; }
+  main { max-width:1080px; margin:0 auto; padding:16px; }
+  /* 双栏 dashboard：左=打卡流（高频操作），右=信息流（错题+考卷），滚动时右栏 sticky 可见 */
+  .lay { display:grid; grid-template-columns: 1fr 390px; gap:30px; align-items:start; }
+  .col-side { position:sticky; top:12px; }
+  /* 模块面板：每个功能块一个白色容器，标题装在里面 */
+  .box { background:#fff; border-radius:14px; padding:14px 16px 12px; box-shadow:0 1px 4px rgba(90,70,40,.08); }
+  .box + .box { margin-top:18px; }
+  .box > h2 { margin:0 0 10px; }
+  .box .card, .box details.wq, .box details.paper, .box .kp { border:1px solid #f3ede2; box-shadow:none; }
+  .box .howto { background:#faf6ee; box-shadow:none; margin-bottom:0; }
+  @media (max-width: 900px) {
+    .lay { grid-template-columns: 1fr; }
+    .col-side { position:static; }
+  }
+  h2 { font-size:15px; color:#c2571f; margin:18px 0 10px; }
+  .dots { display:flex; gap:5px; flex-wrap:wrap; }
+  .dot { width:16px; height:16px; border-radius:50%; background:#e4ded2; }
+  .dot.full { background:#ff6f91; }
+  .dot.part { background:#ffc99e; }
+  .dot .d { display:none; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(205px,1fr)); gap:10px; }
+  .card { background:#fff; border-radius:12px; padding:12px 14px; box-shadow:0 1px 4px rgba(90,70,40,.08); display:flex; flex-direction:column; gap:6px; }
+  .card .name { font-weight:700; font-size:14px; }
+  .card .kind { display:inline-block; font-size:11px; background:#fff1e3; color:#c2571f; border-radius:6px; padding:1px 7px; margin-left:6px; vertical-align:1px; }
+  .card .detail { font-size:12px; color:#8b857a; line-height:1.5; }
+  .card .stat { font-size:12px; color:#6d675c; }
+  .card .stat b { color:#ff6f91; }
+  .card .btns { display:flex; gap:8px; margin-top:2px; }
+  .card .btns button { flex:1; border:0; border-radius:8px; padding:7px 0; font-size:13px; cursor:pointer; }
+  .btn-pass { background:#ff6f91; color:#fff; }
+  .btn-fail { background:#efe9dd; color:#6d675c; }
+  .card.done { box-shadow:0 1px 4px rgba(255,111,145,.35), inset 0 0 0 1.5px #ff6f91; }
+  details.paper { background:#fff; border-radius:12px; margin-bottom:8px; box-shadow:0 1px 4px rgba(90,70,40,.08); }
+  details.paper summary { padding:10px 14px; cursor:pointer; font-size:13px; display:flex; align-items:baseline; flex-wrap:wrap; gap:6px; list-style:none; }
+  details.paper summary::-webkit-details-marker { display:none; }
+  details.paper summary .pt { font-weight:700; font-size:13px; }
+  details.paper summary .pd { font-size:12px; color:#a29b8e; margin-left:auto; }
+  .paper-body { padding:0 14px 12px; font-size:13px; line-height:1.7; color:#57524a; }
+  .paper-body b { color:#c2571f; }
+  .paper-body ul { margin:4px 0 4px 18px; }
+  .tag { font-size:11px; border-radius:6px; padding:1px 7px; font-weight:400; }
+  .t-subj { background:#e8f0fe; color:#3b6fc9; }
+  .t-term { background:#fff1e3; color:#c2571f; }
+  .modal-mask { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:9; align-items:center; justify-content:center; }
+  .modal { background:#fff; border-radius:14px; padding:20px; width:300px; }
+  .modal h3 { font-size:15px; margin-bottom:12px; }
+  .modal input { width:100%; padding:9px 10px; border:1px solid #ddd5c6; border-radius:8px; margin-bottom:10px; font-size:14px; }
+  .modal .row { display:flex; gap:8px; }
+  .modal .row button { flex:1; padding:9px 0; border:0; border-radius:8px; font-size:14px; cursor:pointer; }
+  .msg { font-size:12px; min-height:16px; margin-bottom:8px; }
+  .msg.err { color:#d33; } .msg.ok { color:#2a8f4d; }
+  .empty { color:#a29b8e; font-size:13px; }
+  .kp-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .kp { background:#fff; border-radius:8px; padding:4px 10px; font-size:12px; box-shadow:0 1px 3px rgba(90,70,40,.08); }
+  .kp b { color:#ff6f91; }
+  details.wq { background:#fff; border-radius:12px; margin-bottom:8px; box-shadow:0 1px 4px rgba(90,70,40,.08); }
+  details.wq summary { padding:10px 14px; cursor:pointer; font-size:13px; font-weight:600; }
+  .wq-body { padding:0 14px 12px; font-size:13px; line-height:1.7; color:#57524a; }
+  .badge { font-size:11px; border-radius:6px; padding:1px 7px; margin-left:6px; font-weight:400; }
+  .b-learn { background:#fff1e3; color:#c2571f; }
+  .b-master { background:#e3f4e8; color:#2a8f4d; }
+  .b-new { background:#eee9df; color:#6d675c; }
+  .subj { font-size:11px; background:#e8f0fe; color:#3b6fc9; border-radius:6px; padding:1px 7px; margin-right:6px; font-weight:400; }
+  .wq-more { text-align:center; margin:6px 0 12px; }
+  .wq-more a { font-size:13px; color:#c2571f; }
+  .howto { background:#fff; border-radius:12px; padding:10px 14px; font-size:13px; color:#6d675c; box-shadow:0 1px 4px rgba(90,70,40,.08); margin-bottom:10px; }
+  .howto summary { cursor:pointer; font-weight:600; color:#57524a; }
+  .howto ol { margin:8px 0 2px; padding-left:20px; line-height:1.8; }
+  .howto a { color:#c2456f; }
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="brand">智习岛<small>我们的学习小站</small></div>
+    <div class="acts">
+      <span id="who" style="font-size:13px;opacity:.9;margin-right:4px"></span>
+      <button onclick="openPwd()">改密码</button>
+      <button onclick="logout()">退出</button>
+    </div>
+  </div>
+  <div class="streak-band">
+    <span class="num" id="streak">0</span><span class="lbl">天连胜</span>
+    <span class="lbl" id="today"></span>
+  </div>
+</header>
+<main>
+  <div class="lay">
+    <div class="col-main">
+      <div class="box">
+        <h2>最近 14 天</h2>
+        <div class="dots" id="dots"></div>
+      </div>
+      <div class="box">
+        <h2 style="display:flex;align-items:baseline;justify-content:space-between">字词过关卡（全对才算过关）<a href="/cards.html" style="font-size:12px;color:#c2456f;font-weight:400">📄 纸卡 · 打印 / 存 PDF</a></h2>
+        <div class="grid" id="levels"></div>
+        <details class="howto">
+          <summary>字词过关卡怎么用？（每天 5–10 分钟）</summary>
+          <ol>
+            <li><b>拿纸卡</b>：<a href="/cards.html">过关卡纸卡</a> 打印后用（第 5 页是答案页，家长收好）；不打印也可以直接用上面关卡卡片的词表报给她写</li>
+            <li><b>一天只练一关</b>：从第 1 关开始按顺序，写完立刻对答案</li>
+            <li><b>点结果</b>：全对 → 点这张卡的「全对 ☆」，14 天点阵亮星、连胜 +1；有错 → 点「有错重来」，明天同一关再来</li>
+            <li><b>四条规矩</b>：全对才算过 · 错一个明天重来 · 不过关不批评 · 连胜满 3 天兑一次奖励</li>
+          </ol>
+        </details>
+      </div>
+    </div>
+    <div class="col-side">
+      <div class="box">
+        <h2>🔥 错题弱项 <small style="font-size:12px;color:#a29b8e;font-weight:400">30 天错 ≥3 次打 🔥 · 点条目看题</small></h2>
+        <div class="kp-chips" id="weakpoints"></div>
+        <div id="wrongqs"></div>
+        <div class="wq-more" id="wqmore" style="display:none"><a id="wqToggle" href="javascript:void(0)" onclick="toggleWq()">展开全部 ▾</a></div>
+      </div>
+      <div class="box">
+        <h2 style="display:flex;align-items:baseline;justify-content:space-between">考卷 · 最近 3 张<a href="/papers.html" style="font-size:12px;color:#c2456f;font-weight:400">全部考卷 · 管理 →</a></h2>
+        <div id="papers"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-mask" id="pwdMask">
+  <div class="modal">
+    <h3>修改密码</h3>
+    <div class="msg" id="pwdMsg"></div>
+    <input type="password" id="oldPwd" placeholder="当前密码">
+    <input type="password" id="newPwd" placeholder="新密码（至少 6 位）">
+    <input type="password" id="newPwd2" placeholder="再输一次新密码">
+    <div class="row">
+      <button style="background:#efe9dd;color:#6d675c" onclick="closePwd()">取消</button>
+      <button class="btn-pass" onclick="savePwd()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function md(s){
+  let t = esc(s);
+  const lines = t.split('\n'); let out=[], inUl=false;
+  for (const ln of lines){
+    let l = ln;
+    l = l.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+    if (/^- /.test(l)){ if(!inUl){out.push('<ul>');inUl=true;} out.push('<li>'+l.slice(2)+'</li>'); }
+    else { if(inUl){out.push('</ul>');inUl=false;} if(l.trim()) out.push(l+'<br>'); }
+  }
+  if(inUl) out.push('</ul>');
+  return out.join('');
+}
+const KINDS = {word_write:'写词', char_choice:'选字', liangci:'量词', zhuyin:'注音', pianpang:'偏旁', tingbian:'听辨', duci:'读词'};
+
+async function load(){
+  const r = await fetch('/api/overview'); 
+  if (r.status === 401) { location.href = '/login'; return; }
+  const d = await r.json();
+  const me = await (await fetch('/api/me')).json();
+  document.getElementById('who').textContent = me.username ? (me.username + (me.role==='parent'?'（家长）':'')) : '';
+  document.getElementById('today').textContent = '今天 ' + d.today;
+  document.getElementById('streak').textContent = d.streak;
+  // 14 天点阵（旧→新）
+  const map = {}; d.days.forEach(x => map[x.date] = x);
+  let dots = '';
+  for (let i = 13; i >= 0; i--) {
+    const ds = new Date(Date.now() + 8*3600*1000 - i*86400000).toISOString().slice(0,10);
+    const v = map[ds];
+    const cls = !v ? '' : (v.p > 0 ? 'full' : 'part');
+    dots += `<span class="dot ${cls}" title="${ds} ${v ? (v.p + '/' + v.n + ' 过') : '无打卡'}"></span>`;
+  }
+  document.getElementById('dots').innerHTML = dots;
+  // 关卡
+  const today = d.today;
+  document.getElementById('levels').innerHTML = d.levels.map(l => {
+    const passedToday = (l.last_pass === today);
+    return `<div class="card ${passedToday ? 'done' : ''}">
+      <div><span class="name">${esc(l.name)}</span><span class="kind">${KINDS[l.kind] || esc(l.kind)}</span></div>
+      <div class="detail">${esc(l.detail || '')}</div>
+      <div class="stat">尝试 <b>${l.attempts || 0}</b> 次 · 全对 <b>${l.passes || 0}</b> 次${l.last_pass ? ' · 最近全对 ' + l.last_pass : ''}</div>
+      <div class="btns">
+        <button class="btn-pass" onclick="checkin(${l.id},'pass')">全对 ☆</button>
+        <button class="btn-fail" onclick="checkin(${l.id},'fail')">有错重来</button>
+      </div>
+    </div>`;
+  }).join('');
+  // 错题弱项榜（P1：cuoti 单向同步副本；归档已在 SQL 过滤，默认只露 5 条防埋掉打卡区）
+  const wp = d.weak_points || [];
+  document.getElementById('weakpoints').innerHTML = wp.length
+    ? wp.map(w => `<span class="kp">${esc(w.kp_name)} <b>${w.wrong_count || 0}</b> 错 · ${w.question_count} 题${w.stubborn_count ? ' 🔥' : ''}</span>`).join('')
+    : '<span class="empty">暂无弱项数据（练习答错后这里会亮起来）</span>';
+  window._wq = { list: (d.wrong_questions || []), total: d.wq_total || 0, all: false };
+  renderWq();
+  // 考卷摘要（overview 只回最近 3 张；折叠行式，点开看分析；全量管理在 /papers.html）
+  const SUBJP = { chinese:'语文', math:'数学', english:'英语' };
+  document.getElementById('papers').innerHTML = d.papers.length
+    ? d.papers.map(p => `<details class="paper"><summary><span class="pt">${esc(p.title)}</span><span class="tag t-subj">${SUBJP[p.subject] || esc(p.subject || 'chinese')}</span><span class="tag t-term">${esc(p.term || '')}</span><span class="pd">${esc(p.date)}${p.source==='cuoti'?' · 来自错题库':''}</span></summary>${p.analysis_md ? `<div class="paper-body">${md(p.analysis_md)}</div>` : ''}</details>`).join('')
+    : '<div class="empty">还没有考卷记录 · 去<a href="/papers.html" style="color:#c2456f">考卷库</a>录入第一张</div>';
+}
+function renderWq(){
+  const { list, total, all } = window._wq;
+  const SHOW = 5;
+  const shown = all ? list : list.slice(0, SHOW);
+  const STATUS = { learning: ['学过', 'b-learn'], mastered: ['已掌握', 'b-master'], new: ['新错题', 'b-new'] };
+  const SUBJ = { chinese: '语文', math: '数学' };
+  function safeArr(s){ try { return JSON.parse(s || '[]'); } catch(e) { return []; } }
+  document.getElementById('wrongqs').innerHTML = shown.length
+    ? shown.map(q => {
+        const st = STATUS[q.status] || STATUS.new;
+        const kps = safeArr(q.kp_names);
+        return `<details class="wq"><summary>${q.stubborn ? '🔥' : ''}<span class="subj">${SUBJ[q.subject_code] || esc(q.subject_code)}</span>${esc(q.title || '（无题名）')}<span class="badge ${st[1]}">${st[0]}</span></summary>
+          <div class="wq-body">${esc(q.stem || '')}${q.answer ? '<br><b>答案：</b>' + esc(q.answer) : ''}${q.analysis ? '<br><b>解析：</b>' + esc(q.analysis) : ''}<br><span style="color:#a29b8e;font-size:12px">复习：对 ${q.correct_count} / 错 ${q.wrong_count}${q.last_wrong_at ? ' · 最近答错 ' + q.last_wrong_at.slice(0,10) : ''}${kps.length ? ' · ' + kps.map(esc).join('、') : ''}</span></div></details>`;
+      }).join('')
+    : '<div class="empty">没有未归档错题</div>';
+  const more = document.getElementById('wqmore'), t = document.getElementById('wqToggle');
+  if (list.length > SHOW) {
+    more.style.display = '';
+    t.textContent = all ? '收起 ▴' : `展开全部 ${list.length} 条 ▾` + (total > list.length ? `（共 ${total} 条，仅显示最近 ${list.length} 条）` : '');
+  } else { more.style.display = 'none'; }
+}
+function toggleWq(){ window._wq.all = !window._wq.all; renderWq(); }
+async function checkin(levelId, result){
+  const ok = confirm(result === 'pass'
+    ? '确认这一关【全对】？\n全对才算过关，误点请点「取消」'
+    : '确认记录一次「有错重来」？\n（明天同一关再练，不算失败）');
+  if (!ok) return;
+  const r = await fetch('/api/checkin', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ level_id: levelId, result: result }) });
+  const d = await r.json();
+  if (!d.ok) alert(d.error || '失败');
+  load();
+}
+function openPwd(){ document.getElementById('pwdMask').style.display='flex'; document.getElementById('pwdMsg').textContent=''; }
+function closePwd(){ document.getElementById('pwdMask').style.display='none'; }
+async function savePwd(){
+  const old1 = document.getElementById('oldPwd').value;
+  const n1 = document.getElementById('newPwd').value;
+  const n2 = document.getElementById('newPwd2').value;
+  const msg = document.getElementById('pwdMsg');
+  if (n1 !== n2) { msg.textContent = '两次新密码不一致'; msg.className='msg err'; return; }
+  const r = await fetch('/api/me/password', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ current: old1, next: n1 }) });
+  const d = await r.json();
+  if (d.ok) { msg.textContent = '已修改，其他设备需重新登录'; msg.className='msg ok'; setTimeout(()=>{closePwd(); document.getElementById('oldPwd').value='';document.getElementById('newPwd').value='';document.getElementById('newPwd2').value='';}, 1200); }
+  else { msg.textContent = d.error || '失败'; msg.className='msg err'; }
+}
+async function logout(){ await fetch('/api/logout', {method:'POST'}); location.href='/login'; }
+load();
+</script>
+</body>
+</html>
