@@ -1,6 +1,7 @@
 // 智习岛 (zhixidao) — 家庭学习小站
 // 基于 cf-crypto-site worker 改造：用户名+密码（PBKDF2 会话 + 登录限速）+ D1
 // P0 API: /api/login /api/logout /api/me /api/me/password /api/overview /api/checkin /api/papers
+// v10 API: /api/math/all /api/math/sessions(+/:id) /api/math/marks(+/:id)
 // 隐私：站内只用昵称；全站登录后可见；kid 账号（P2）只能打卡页
 const COOKIE = 'zhixidao_auth';
 const SESSION_DAYS = 30;
@@ -254,8 +255,29 @@ async function apiOverview(request, env) {
     `SELECT kp_code, kp_name, subject_code, question_count, wrong_count, last_wrong_at, stubborn_count
      FROM weak_points WHERE student_code = ?
      ORDER BY wrong_count DESC, question_count DESC LIMIT 30`).bind('yueyue').all()).results;
+  // v10：口算摘要（最近一场 + 连胜 + 总场次）。连胜只按有数据的场次算，
+  // math_marks（在校完成无数据）在点阵上单独显示、不计数不断签
+  const mathLast = (await env.DB.prepare(
+    `SELECT s.date, s.session_no, t.name AS topic, s.duration_seconds, s.duration_estimated,
+            s.total_questions, s.correct_count
+     FROM math_sessions s JOIN math_topics t ON t.id = s.topic_id
+     WHERE s.student_id = ? ORDER BY s.date DESC, s.session_no DESC LIMIT 1`).bind(sid).all()).results;
+  const mathDays = (await env.DB.prepare(
+    `SELECT DISTINCT date FROM math_sessions WHERE student_id = ? AND date >= ?`)
+    .bind(sid, localToday(-29)).all()).results;
+  const mset = new Set(mathDays.map(r => r.date));
+  let mStreak = 0;
+  let mt = Date.now() + 8 * 3600 * 1000;
+  if (!mset.has(new Date(mt).toISOString().slice(0, 10))) mt -= 86400000;
+  for (;;) {
+    const ds = new Date(mt).toISOString().slice(0, 10);
+    if (mset.has(ds)) { mStreak++; mt -= 86400000; } else break;
+  }
+  const mathTotal = (await env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM math_sessions WHERE student_id = ?').bind(sid).first());
   return json({ ok: true, today: localToday(0), levels, days, streak, papers,
-                wrong_questions: wq, wq_total: wqTotal ? wqTotal.n : 0, weak_points: wps });
+                wrong_questions: wq, wq_total: wqTotal ? wqTotal.n : 0, weak_points: wps,
+                math_last: mathLast[0] || null, math_streak: mStreak, math_total: mathTotal ? mathTotal.n : 0 });
 }
 
 // ---------- 业务：打卡 ----------
@@ -338,6 +360,159 @@ async function apiPaperDelete(request, env, u, id) {
   return json({ ok: true });
 }
 
+// ---------- 业务：口算（v10，真源=math_sessions，全量下发前端聚合） ----------
+async function apiMathAll(request, env) {
+  const sid = await getStudentId(env);
+  const topics = (await env.DB.prepare(
+    'SELECT id, name, alias, sort_no FROM math_topics ORDER BY sort_no').all()).results;
+  const sessions = (await env.DB.prepare(
+    `SELECT s.id, s.date, s.session_no, s.topic_id, t.name AS topic, t.alias AS topic_alias,
+            s.duration_seconds, s.duration_estimated, s.total_questions, s.correct_count, s.note, s.source
+     FROM math_sessions s JOIN math_topics t ON t.id = s.topic_id
+     WHERE s.student_id = ? ORDER BY s.date DESC, s.session_no DESC`).bind(sid).all()).results;
+  const wrongs = (await env.DB.prepare(
+    `SELECT w.session_id, w.expr, w.answer_given, w.answer_correct, w.note
+     FROM math_wrong_items w JOIN math_sessions s ON s.id = w.session_id
+     WHERE s.student_id = ?`).bind(sid).all()).results;
+  const marks = (await env.DB.prepare(
+    'SELECT id, date, note FROM math_marks WHERE student_id = ? ORDER BY date DESC').bind(sid).all()).results;
+  const bySession = {};
+  for (const w of wrongs) (bySession[w.session_id] = bySession[w.session_id] || []).push(w);
+  for (const s of sessions) s.wrong_items = bySession[s.id] || [];
+  return json({ ok: true, today: localToday(0), topics, sessions, marks });
+}
+
+// 场次表单校验（创建/编辑共用）
+function parseMathBody(body) {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(body.date || '') ? body.date : localToday(0);
+  let sessionNo = parseInt(body.session_no, 10);
+  if (!Number.isFinite(sessionNo) || sessionNo < 1 || sessionNo > 20) sessionNo = null;
+  const topicId = parseInt(body.topic_id, 10);
+  const duration = body.duration_seconds === null || body.duration_seconds === undefined || body.duration_seconds === ''
+    ? null : Math.min(36000, Math.max(1, parseInt(body.duration_seconds, 10) || 0)) || null;
+  const estimated = body.duration_estimated ? 1 : 0;
+  const total = parseInt(body.total_questions, 10);
+  const correct = parseInt(body.correct_count, 10);
+  if (!Number.isFinite(topicId)) return { error: '题型必选' };
+  if (!Number.isFinite(total) || total < 1 || total > 500) return { error: '题数需在 1-500' };
+  if (!Number.isFinite(correct) || correct < 0 || correct > total) return { error: '对数不能大于题数' };
+  const note = (body.note || '').slice(0, 2000) || null;
+  const items = Array.isArray(body.wrong_items) ? body.wrong_items.slice(0, 40) : [];
+  const wrongItems = [];
+  for (const it of items) {
+    const expr = (it.expr || '').trim().slice(0, 100);
+    if (!expr) continue;
+    wrongItems.push({
+      expr,
+      answer_given: (it.answer_given || '').toString().slice(0, 20) || null,
+      answer_correct: (it.answer_correct || '').toString().slice(0, 20) || null,
+      note: (it.note || '').slice(0, 200) || null
+    });
+  }
+  return { date, sessionNo, topicId, duration, estimated, total, correct, note, wrongItems };
+}
+
+async function apiMathSessionCreate(request, env, u) {
+  if (u.role !== 'parent') return json({ error: '仅家长可录入' }, 403);
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const pb = parseMathBody(body);
+  if (pb.error) return json({ error: pb.error }, 400);
+  const sid = await getStudentId(env);
+  if (!pb.sessionNo) {
+    const mx = (await env.DB.prepare(
+      'SELECT MAX(session_no) AS n FROM math_sessions WHERE student_id = ? AND date = ?')
+      .bind(sid, pb.date).first());
+    pb.sessionNo = (mx && mx.n ? mx.n : 0) + 1;
+  }
+  const tp = await env.DB.prepare('SELECT id FROM math_topics WHERE id = ?').bind(pb.topicId).first();
+  if (!tp) return json({ error: '题型不存在' }, 404);
+  try {
+    const r = await env.DB.prepare(
+      `INSERT INTO math_sessions (student_id, date, session_no, topic_id, duration_seconds,
+        duration_estimated, total_questions, correct_count, note, source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual')`)
+      .bind(sid, pb.date, pb.sessionNo, pb.topicId, pb.duration, pb.estimated,
+            pb.total, pb.correct, pb.note).run();
+    const newId = r.meta.last_row_id;
+    if (pb.wrongItems.length) {
+      await env.DB.batch(pb.wrongItems.map(w =>
+        env.DB.prepare(
+          'INSERT INTO math_wrong_items (session_id, expr, answer_given, answer_correct, note) VALUES (?, ?, ?, ?, ?)')
+          .bind(newId, w.expr, w.answer_given, w.answer_correct, w.note)));
+    }
+    return json({ ok: true, id: newId });
+  } catch (e) {
+    if (String(e.message || '').includes('UNIQUE')) return json({ error: '该日期已有这一场（场次号重复）' }, 400);
+    return json({ error: '保存失败' }, 500);
+  }
+}
+
+async function apiMathSessionUpdate(request, env, u, id) {
+  if (u.role !== 'parent') return json({ error: '仅家长可编辑' }, 403);
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const pb = parseMathBody(body);
+  if (pb.error) return json({ error: pb.error }, 400);
+  const sid = await getStudentId(env);
+  const cur = await env.DB.prepare('SELECT id FROM math_sessions WHERE id = ? AND student_id = ?').bind(id, sid).first();
+  if (!cur) return json({ error: '记录不存在' }, 404);
+  try {
+    const ops = [env.DB.prepare(
+      `UPDATE math_sessions SET date = ?, session_no = ?, topic_id = ?, duration_seconds = ?,
+        duration_estimated = ?, total_questions = ?, correct_count = ?, note = ?
+       WHERE id = ? AND student_id = ?`)
+      .bind(pb.date, pb.sessionNo || 1, pb.topicId, pb.duration, pb.estimated,
+            pb.total, pb.correct, pb.note, id, sid),
+      env.DB.prepare('DELETE FROM math_wrong_items WHERE session_id = ?').bind(id)];
+    await env.DB.batch(ops);
+    if (pb.wrongItems.length) {
+      await env.DB.batch(pb.wrongItems.map(w =>
+        env.DB.prepare(
+          'INSERT INTO math_wrong_items (session_id, expr, answer_given, answer_correct, note) VALUES (?, ?, ?, ?, ?)')
+          .bind(id, w.expr, w.answer_given, w.answer_correct, w.note)));
+    }
+    return json({ ok: true });
+  } catch (e) {
+    if (String(e.message || '').includes('UNIQUE')) return json({ error: '该日期已有这一场（场次号重复）' }, 400);
+    return json({ error: '保存失败' }, 500);
+  }
+}
+
+async function apiMathSessionDelete(request, env, u, id) {
+  if (u.role !== 'parent') return json({ error: '仅家长可删除' }, 403);
+  const sid = await getStudentId(env);
+  const r = await env.DB.prepare('DELETE FROM math_sessions WHERE id = ? AND student_id = ?').bind(id, sid).run();
+  if (!r.meta.changes) return json({ error: '记录不存在' }, 404);
+  await env.DB.prepare('DELETE FROM math_wrong_items WHERE session_id = ?').bind(id).run();
+  return json({ ok: true });
+}
+
+async function apiMathMarkCreate(request, env, u) {
+  if (u.role !== 'parent') return json({ error: '仅家长可标记' }, 403);
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(body.date || '') ? body.date : localToday(0);
+  const note = (body.note || '').trim().slice(0, 200);
+  if (!note) return json({ error: '标记内容必填' }, 400);
+  const sid = await getStudentId(env);
+  try {
+    await env.DB.prepare('INSERT INTO math_marks (student_id, date, note) VALUES (?, ?, ?)')
+      .bind(sid, date, note).run();
+    return json({ ok: true });
+  } catch (e) {
+    return json({ error: '该日期已有标记' }, 400);
+  }
+}
+
+async function apiMathMarkDelete(request, env, u, id) {
+  if (u.role !== 'parent') return json({ error: '仅家长可删除' }, 403);
+  const sid = await getStudentId(env);
+  const r = await env.DB.prepare('DELETE FROM math_marks WHERE id = ? AND student_id = ?').bind(id, sid).run();
+  if (!r.meta.changes) return json({ error: '标记不存在' }, 404);
+  return json({ ok: true });
+}
+
 // ---------- main fetch ----------
 export default {
   async fetch(request, env) {
@@ -361,6 +536,14 @@ export default {
       const pm = p.match(/^\/api\/papers\/(\d+)$/);
       if (pm && method === 'PUT') return apiPaperUpdate(request, env, u, parseInt(pm[1], 10));
       if (pm && method === 'DELETE') return apiPaperDelete(request, env, u, parseInt(pm[1], 10));
+      if (p === '/api/math/all' && method === 'GET') return apiMathAll(request, env);
+      if (p === '/api/math/sessions' && method === 'POST') return apiMathSessionCreate(request, env, u);
+      const mm = p.match(/^\/api\/math\/sessions\/(\d+)$/);
+      if (mm && method === 'PUT') return apiMathSessionUpdate(request, env, u, parseInt(mm[1], 10));
+      if (mm && method === 'DELETE') return apiMathSessionDelete(request, env, u, parseInt(mm[1], 10));
+      if (p === '/api/math/marks' && method === 'POST') return apiMathMarkCreate(request, env, u);
+      const mk = p.match(/^\/api\/math\/marks\/(\d+)$/);
+      if (mk && method === 'DELETE') return apiMathMarkDelete(request, env, u, parseInt(mk[1], 10));
       return json({ error: '未找到' }, 404);
     }
 

@@ -121,3 +121,57 @@ CREATE TABLE IF NOT EXISTS weak_points (
   sync_at        TEXT,
   PRIMARY KEY (student_code, kp_code)
 );
+
+-- ============================================================
+-- v10：口算练习（math.html）
+-- 真源：D1（小虾站 2026-09-10~10-19 全量迁移 106 场后，zhixidao 唯一记录入口；
+--       小虾站停写）。所有表挂 student_id（二宝复用）。
+-- ============================================================
+
+-- 题型字典（name=正式名；alias=历史别名/页签简称）
+CREATE TABLE IF NOT EXISTS math_topics (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  name    TEXT NOT NULL UNIQUE,
+  alias   TEXT,
+  sort_no INTEGER NOT NULL DEFAULT 0
+);
+
+-- 练习场次（auth 表已叫 sessions，口算场次用 math_sessions）
+CREATE TABLE IF NOT EXISTS math_sessions (
+  id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id         INTEGER NOT NULL REFERENCES students(id),
+  date               TEXT NOT NULL,            -- YYYY-MM-DD
+  session_no         INTEGER NOT NULL DEFAULT 1, -- 当日第几场
+  topic_id           INTEGER NOT NULL REFERENCES math_topics(id),
+  duration_seconds   INTEGER,                  -- 秒；估算时存估算值
+  duration_estimated INTEGER NOT NULL DEFAULT 0, -- 1=用时估算（原站未实测，note 有说明）
+  total_questions    INTEGER NOT NULL,
+  correct_count      INTEGER NOT NULL,
+  ext_key            TEXT,                     -- 迁移溯源键（date-sessionno）
+  note               TEXT,
+  source             TEXT NOT NULL DEFAULT 'manual', -- manual | agent | import_xiaoxia
+  created_at         TEXT DEFAULT (datetime('now')),
+  UNIQUE(student_id, date, session_no)
+);
+CREATE INDEX IF NOT EXISTS idx_math_sessions ON math_sessions(student_id, date);
+
+-- 错题明细（expr 支持任意算式：54+27 / ( )-15=62 / 2 ( ) 4 = 8）
+CREATE TABLE IF NOT EXISTS math_wrong_items (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id     INTEGER NOT NULL REFERENCES math_sessions(id),
+  expr           TEXT NOT NULL,
+  answer_given   TEXT,
+  answer_correct TEXT,
+  note           TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_math_wrong ON math_wrong_items(session_id);
+
+-- 日历标记：有打卡意义但无场次数据的日子（如「在校完成，无具体数据」）
+CREATE TABLE IF NOT EXISTS math_marks (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  date       TEXT NOT NULL,
+  note       TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(student_id, date)
+);

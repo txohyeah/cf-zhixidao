@@ -134,6 +134,10 @@
         <h2 style="display:flex;align-items:baseline;justify-content:space-between">考卷 · 最近 3 张<a href="/papers.html" style="font-size:12px;color:#c2456f;font-weight:400">全部考卷 · 管理 →</a></h2>
         <div id="papers"></div>
       </div>
+      <div class="box">
+        <h2 style="display:flex;align-items:baseline;justify-content:space-between">🧮 口算<a href="/math.html" style="font-size:12px;color:#c2456f;font-weight:400">全部口算记录 →</a></h2>
+        <div id="mathBox"></div>
+      </div>
     </div>
   </div>
 </main>
@@ -212,6 +216,13 @@ async function load(){
   document.getElementById('papers').innerHTML = d.papers.length
     ? d.papers.map(p => `<details class="paper"><summary><span class="pt">${esc(p.title)}</span><span class="tag t-subj">${SUBJP[p.subject] || esc(p.subject || 'chinese')}</span><span class="tag t-term">${esc(p.term || '')}</span><span class="pd">${esc(p.date)}${p.source==='cuoti'?' · 来自错题库':''}</span></summary>${p.analysis_md ? `<div class="paper-body">${md(p.analysis_md)}</div>` : ''}</details>`).join('')
     : '<div class="empty">还没有考卷记录 · 去<a href="/papers.html" style="color:#c2456f">考卷库</a>录入第一张</div>';
+  // 口算摘要（v10）：最近一场 + 连胜 + 累计场次
+  const ml = d.math_last;
+  const mt = (x) => { const m = Math.floor(x/60), s = x%60; return m ? m+'分'+(s<10?'0':'')+s+'秒' : s+'秒'; };
+  document.getElementById('mathBox').innerHTML = ml
+    ? `<div style="font-size:13px;line-height:1.8">最近：<b>${esc(ml.date)}</b> · 第${ml.session_no}场 · ${esc(ml.topic)}<br>
+       <span style="color:#8b857a;font-size:12px">${ml.duration_estimated?'≈':''}${mt(ml.duration_seconds||0)} · 对 ${ml.correct_count}/${ml.total_questions}（${Math.round(ml.correct_count/ml.total_questions*1000)/10}%）· 连续 ${d.math_streak} 天 · 共 ${d.math_total} 场</span></div>`
+    : '<div class="empty">还没有口算记录</div>';
 }
 function renderWq(){
   const { list, total, all } = window._wq;

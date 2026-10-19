@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智习岛 · 口算记录</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC","Microsoft YaHei",sans-serif; background:#f6f4ef; color:#3d3a34; padding-bottom:60px; }
+  header { background:linear-gradient(135deg,#ff9a62,#ff6f91); color:#fff; padding:18px 20px 14px; }
+  .top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; max-width:980px; margin:0 auto; }
+  .brand { font-size:22px; font-weight:700; }
+  .brand small { font-weight:400; opacity:.85; font-size:13px; margin-left:8px; }
+  .top .acts button { background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.5); color:#fff; border-radius:8px; padding:5px 12px; font-size:13px; cursor:pointer; margin-left:6px; }
+  main { max-width:980px; margin:0 auto; padding:16px; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-bottom:14px; }
+  .stat { background:#fff; border-radius:12px; padding:12px 14px; box-shadow:0 1px 4px rgba(90,70,40,.08); }
+  .stat .k { font-size:12px; color:#a29b8e; }
+  .stat .v { font-size:19px; font-weight:800; color:#3d3a34; margin-top:3px; }
+  .stat .s { font-size:12px; color:#8b857a; margin-top:3px; line-height:1.5; }
+  .stat .v small { font-size:12px; font-weight:400; color:#a29b8e; }
+  .box { background:#fff; border-radius:14px; padding:14px 16px 12px; box-shadow:0 1px 4px rgba(90,70,40,.08); margin-bottom:16px; }
+  .box h2 { margin:0 0 10px; }
+  h2 { font-size:15px; color:#c2571f; }
+  .dots { display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
+  .dot { width:16px; height:16px; border-radius:50%; background:#e4ded2; }
+  .dot.full { background:#ff6f91; }
+  .dot.part { background:#ffc99e; }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; }
+  .chip { background:#faf6ee; border:1px solid #f0e9db; color:#6d675c; border-radius:16px; padding:5px 13px; font-size:13px; cursor:pointer; }
+  .chip.on { background:#ff6f91; border-color:#ff6f91; color:#fff; font-weight:600; }
+  .chip b { font-weight:400; opacity:.8; }
+  .chartwrap { overflow-x:auto; }
+  .chart { min-width:640px; width:100%; }
+  .legend { font-size:12px; color:#8b857a; margin-top:4px; display:flex; gap:14px; flex-wrap:wrap; }
+  .legend i { display:inline-block; width:16px; height:3px; border-radius:2px; vertical-align:3px; margin-right:4px; }
+  table.cmp { width:100%; border-collapse:collapse; font-size:13px; }
+  table.cmp th { text-align:left; color:#a29b8e; font-weight:400; font-size:12px; padding:6px 8px; border-bottom:1px solid #f0e9db; }
+  table.cmp td { padding:7px 8px; border-bottom:1px solid #f6f2e9; }
+  table.cmp td b { color:#ff6f91; }
+  .rec { background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:9px; box-shadow:0 1px 4px rgba(90,70,40,.08); }
+  .rec .hd { display:flex; align-items:baseline; flex-wrap:wrap; gap:6px; }
+  .rec .pt { font-weight:700; font-size:14px; }
+  .rec .pd { font-size:12px; color:#8b857a; }
+  .rec .ops { margin-left:auto; display:flex; gap:6px; }
+  .rec .ops button { border:0; border-radius:6px; padding:3px 10px; font-size:12px; cursor:pointer; }
+  .op-edit { background:#efe9dd; color:#6d675c; }
+  .op-del { background:#fdecec; color:#c0392b; }
+  .tag { font-size:11px; border-radius:6px; padding:1px 7px; font-weight:400; }
+  .t-topic { background:#fff1e3; color:#c2571f; }
+  .t-est { background:#eee9df; color:#8b857a; }
+  .rec .wrongs { font-size:13px; color:#c0392b; margin-top:6px; line-height:1.6; }
+  .rec .note { font-size:12px; color:#8b857a; margin-top:4px; line-height:1.6; }
+  .more { text-align:center; margin:14px 0; }
+  .more button { background:#efe9dd; color:#6d675c; border:0; border-radius:8px; padding:9px 24px; font-size:13px; cursor:pointer; }
+  .bar { display:flex; align-items:baseline; justify-content:space-between; margin:2px 0 10px; flex-wrap:wrap; gap:8px; }
+  .bar .cnt { font-size:12px; color:#a29b8e; }
+  .btn-new { background:#ff6f91; color:#fff; border:0; border-radius:8px; padding:8px 16px; font-size:13px; cursor:pointer; font-weight:600; }
+  .empty { color:#a29b8e; font-size:13px; }
+  .modal-mask { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:9; align-items:center; justify-content:center; padding:16px; }
+  .modal { background:#fff; border-radius:14px; padding:20px; width:560px; max-width:100%; max-height:92vh; overflow:auto; }
+  .modal h3 { font-size:15px; margin-bottom:12px; }
+  .modal label { display:block; font-size:12px; color:#8b857a; margin:8px 0 4px; }
+  .modal input, .modal select, .modal textarea { width:100%; padding:9px 10px; border:1px solid #ddd5c6; border-radius:8px; font-size:14px; font-family:inherit; }
+  .modal textarea { min-height:64px; line-height:1.6; resize:vertical; }
+  .modal .row2 { display:flex; gap:10px; }
+  .modal .row2 > div { flex:1; }
+  .modal .row3 { display:flex; gap:6px; margin-bottom:6px; }
+  .modal .row3 input { font-size:13px; padding:7px 8px; }
+  .modal .row3 .w1 { flex:2; } .modal .row3 .w2 { flex:1; } .modal .row3 .w3 { flex:2; }
+  .modal .btns { display:flex; gap:8px; margin-top:14px; }
+  .modal .btns button { flex:1; padding:9px 0; border:0; border-radius:8px; font-size:14px; cursor:pointer; }
+  .addrow { background:#faf6ee; color:#c2571f; border:1px dashed #e4c9a8; border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; margin-top:4px; }
+  .msg { font-size:12px; min-height:16px; margin-bottom:8px; }
+  .msg.err { color:#d33; } .msg.ok { color:#2a8f4d; }
+  .hint { font-size:11px; color:#a29b8e; margin-top:4px; }
+  .chk { display:flex; align-items:center; gap:6px; font-size:13px; color:#57524a; margin-top:8px; }
+  .chk input { width:auto; }
+  .markform { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .markform input { padding:7px 9px; border:1px solid #ddd5c6; border-radius:8px; font-size:13px; }
+  .markform .d { width:130px; } .markform .t { flex:1; min-width:160px; }
+  .marklist { margin-top:8px; display:flex; flex-direction:column; gap:4px; }
+  .marklist .mk { font-size:12px; color:#8b857a; display:flex; gap:8px; align-items:center; }
+  .mk button { border:0; background:#fdecec; color:#c0392b; border-radius:6px; padding:1px 8px; font-size:11px; cursor:pointer; }
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="brand">口算记录<small>智习岛 · 每天 1-3 场</small></div>
+    <div class="acts">
+      <span id="who" style="font-size:13px;opacity:.9;margin-right:4px"></span>
+      <button onclick="location.href='/'">返回总览</button>
+      <button onclick="logout()">退出</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats" id="stats"></div>
+
+  <div class="box">
+    <h2>最近 14 天 <span id="streak" style="font-size:13px;color:#8b857a;font-weight:400"></span></h2>
+    <div class="dots" id="dots"></div>
+    <div id="markarea"></div>
+  </div>
+
+  <div class="box">
+    <h2>题型筛选 <span style="font-size:12px;color:#a29b8e;font-weight:400">切换后，统计和趋势只看该题型</span></h2>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="box">
+    <h2>趋势</h2>
+    <div class="chartwrap"><svg class="chart" id="chartSpeed" viewBox="0 0 720 170"></svg></div>
+    <div class="legend"><span><i style="background:#ff6f91"></i>单次</span><span><i style="background:#ffc99e"></i>近 5 次均值</span><span><i style="background:#9db8d9"></i>近 30 次均值</span></div>
+    <div class="chartwrap" style="margin-top:10px"><svg class="chart" id="chartAcc" viewBox="0 0 720 170"></svg></div>
+    <div class="legend"><span><i style="background:#ff6f91"></i>单次正确率</span><span><i style="background:#9db8d9"></i>近 30 次均值</span></div>
+    <div class="chartwrap" style="margin-top:10px"><svg class="chart" id="chartVol" viewBox="0 0 720 170"></svg></div>
+    <div class="legend"><span><i style="background:#ff6f91"></i>单次题量</span></div>
+  </div>
+
+  <div class="box">
+    <h2>题型对照 <span style="font-size:12px;color:#a29b8e;font-weight:400">各题型分开算，不混在一起</span></h2>
+    <table class="cmp"><thead><tr>
+      <th>题型</th><th>练习次数</th><th>平均秒/题</th><th>最快秒/题</th><th>正确率</th><th>累计题数</th>
+    </tr></thead><tbody id="cmpBody"></tbody></table>
+  </div>
+
+  <div class="bar">
+    <h2 style="font-size:15px;color:#c2571f">每次记录 <span class="cnt" id="cnt"></span></h2>
+    <button class="btn-new" id="btnNew" onclick="openCreate()">＋ 补录一场</button>
+  </div>
+  <div id="list"></div>
+  <div class="more" id="more" style="display:none"><button onclick="loadMore()">加载更早的记录 ▾</button></div>
+</main>
+
+<div class="modal-mask" id="mask">
+  <div class="modal">
+    <h3 id="mTitle">补录一场</h3>
+    <div class="msg" id="mMsg"></div>
+    <div class="row2">
+      <div>
+        <label>日期</label>
+        <input type="date" id="fDate">
+      </div>
+      <div>
+        <label>场次（留空 = 当日自动 +1）</label>
+        <input type="number" id="fSession" min="1" max="20" placeholder="自动">
+      </div>
+    </div>
+    <label>题型</label>
+    <select id="fTopic"></select>
+    <div class="row2">
+      <div>
+        <label>用时（分钟）</label>
+        <input type="number" id="fMin" min="0" placeholder="7">
+      </div>
+      <div>
+        <label>用时（秒）</label>
+        <input type="number" id="fSec" min="0" max="59" placeholder="20">
+      </div>
+    </div>
+    <label class="chk"><input type="checkbox" id="fEst"> 用时为估算值（原站未实测计时）</label>
+    <div class="row2">
+      <div>
+        <label>共几题</label>
+        <input type="number" id="fTotal" min="1" value="22">
+      </div>
+      <div>
+        <label>对几题</label>
+        <input type="number" id="fCorrect" min="0" value="22">
+      </div>
+    </div>
+    <label>错题明细（题式 / 她写的 / 正确 / 错因）</label>
+    <div id="wrongRows"></div>
+    <button class="addrow" onclick="addWrongRow()">＋ 加一行错题</button>
+    <label style="margin-top:10px">备注（当时状态、错因分析等）</label>
+    <textarea id="fNote" placeholder="例：错2题：54+27=83（正解81，进位多2）…"></textarea>
+    <div class="btns">
+      <button style="background:#efe9dd;color:#6d675c" onclick="closeModal()">取消</button>
+      <button class="btn-new" onclick="save()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let ME = null, DATA = null, SEL = 'all', SHOWN = 30, EDIT_ID = null;
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function durText(sec){
+  if (sec === null || sec === undefined) return '未记录';
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m ? (m + '分' + (s < 10 ? '0' : '') + s + '秒') : (s + '秒');
+}
+function pct(c, t){ return t ? Math.round(c / t * 1000) / 10 : 0; }
+function mdText(d){ // '2026-10-19' -> '10月19日'
+  const p = d.split('-'); return parseInt(p[1], 10) + '月' + parseInt(p[2], 10) + '日';
+}
+function weekCn(d){
+  const w = new Date(d + 'T12:00:00+08:00').getDay();
+  return '周' + '日一二三四五六'[w];
+}
+
+async function whoami(){
+  const d = await (await fetch('/api/me')).json();
+  ME = d.authed ? d : null;
+  document.getElementById('who').textContent = ME ? (ME.username + (ME.role==='parent'?'（家长）':'')) : '';
+  const isParent = ME && ME.role === 'parent';
+  document.getElementById('btnNew').style.display = isParent ? '' : 'none';
+}
+
+/* ---------- 聚合 ---------- */
+function filtered(){
+  return SEL === 'all' ? DATA.sessions : DATA.sessions.filter(s => s.topic_id === SEL);
+}
+function inOrder(list){ return list.slice().reverse(); } // 新→旧 → 旧→新（时间序）
+
+function renderStats(list){
+  const all = DATA.sessions;
+  const totQ = list.reduce((a,s)=>a+s.total_questions,0);
+  const totC = list.reduce((a,s)=>a+s.correct_count,0);
+  const totSec = list.reduce((a,s)=>a+(s.duration_seconds||0),0);
+  let fastest = null;
+  for (const s of list) if (s.duration_seconds && (!fastest || s.duration_seconds/s.total_questions < fastest.duration_seconds/fastest.total_questions)) fastest = s;
+  const last = list[0];
+  const lastHtml = last
+    ? `${mdText(last.date)} · 第${last.session_no}场<small style="font-size:12px;color:#a29b8e">（${esc(last.topic_alias || last.topic)}）</small>`
+        + `<div class="s">${last.duration_estimated ? '≈' : ''}${durText(last.duration_seconds)} · 对${last.correct_count}·错${last.total_questions-last.correct_count} · ${pct(last.correct_count,last.total_questions)}%</div>`
+    : '<div class="s">还没有记录</div>';
+  const fastHtml = fastest
+    ? `${(fastest.duration_seconds/fastest.total_questions).toFixed(1)}<small> 秒/题</small><div class="s">${mdText(fastest.date)} · ${esc(fastest.topic_alias || fastest.topic)}</div>`
+    : '<div class="s">—</div>';
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="k">最近一次（所选题型）</div><div class="v" style="font-size:15px">${lastHtml}</div></div>
+    <div class="stat"><div class="k">累计练习（全部题型）</div><div class="v">${all.length}<small> 场 · 共 ${all.reduce((a,s)=>a+s.total_questions,0)} 题</small></div></div>
+    <div class="stat"><div class="k">正确率（所选题型）</div><div class="v">${pct(totC,totQ)}%<div class="s">对 ${totC} / ${totQ} 题${totSec?' · 累计 '+durText(totSec):''}</div></div></div>
+    <div class="stat"><div class="k">最快纪录（所选题型）</div><div class="v">${fastHtml}</div></div>`;
+}
+
+function renderDots(){
+  const byDay = {}; DATA.sessions.forEach(s => byDay[s.date] = (byDay[s.date]||0)+1);
+  const marks = {}; DATA.marks.forEach(m => marks[m.date] = m);
+  let dots = '';
+  for (let i = 13; i >= 0; i--) {
+    const ds = new Date(Date.now() + 8*3600*1000 - i*86400000).toISOString().slice(0,10);
+    const n = byDay[ds] || 0, mk = marks[ds];
+    const cls = n > 0 ? 'full' : (mk ? 'part' : '');
+    const tip = ds + (n ? ` ${n} 场` : '') + (mk ? ` · ${mk.note}` : '');
+    dots += `<span class="dot ${cls}" title="${esc(tip)}"></span>`;
+  }
+  document.getElementById('dots').innerHTML = dots;
+  // 口算连胜（有场次的天数；marks 不计数不断签）
+  const set = new Set(Object.keys(byDay));
+  let streak = 0, t = Date.now() + 8*3600*1000;
+  if (!set.has(new Date(t).toISOString().slice(0,10))) t -= 86400000;
+  for(;;){ const ds = new Date(t).toISOString().slice(0,10); if (set.has(ds)){streak++;t-=86400000;} else break; }
+  document.getElementById('streak').textContent = `· 连续 ${streak} 天`;
+  const isParent = ME && ME.role === 'parent';
+  const area = document.getElementById('markarea');
+  let html = '';
+  const mks = DATA.marks.slice(0, 4);
+  if (mks.length) html += `<div class="marklist">` + mks.map(m =>
+    `<span class="mk">📍 ${esc(m.date)} · ${esc(m.note)}${isParent?` <button onclick="delMark(${m.id})">删</button>`:''}</span>`).join('') + '</div>';
+  if (isParent) html += `<div class="markform">
+      <input class="d" type="date" id="mkDate"><input class="t" type="text" id="mkNote" maxlength="60" placeholder="标记某天：如 在校完成（无具体数据）">
+      <button class="addrow" style="margin:0" onclick="addMark()">标记</button></div>`;
+  area.innerHTML = html;
+}
+
+function renderChips(){
+  const counts = {}; DATA.sessions.forEach(s => counts[s.topic_id] = (counts[s.topic_id]||0)+1);
+  let html = `<span class="chip ${SEL==='all'?'on':''}" onclick="setSel('all')">全部题型 <b>${DATA.sessions.length}</b></span>`;
+  for (const t of DATA.topics) {
+    html += `<span class="chip ${SEL===t.id?'on':''}" onclick="setSel(${t.id})">${esc(t.name)} <b>${counts[t.id]||0}</b></span>`;
+  }
+  document.getElementById('chips').innerHTML = html;
+}
+function setSel(v){ SEL = v === 'all' ? 'all' : parseInt(v, 10); SHOWN = 30; renderAll(); }
+
+/* ---------- SVG 趋势图 ---------- */
+function svgChart(el, series, opts){
+  const W = 720, H = 170, L = 46, R = 10, T = 14, B = 24;
+  const list = inOrder(series); // 时间序
+  const n = list.length;
+  el.innerHTML = '';
+  if (n < 2) { el.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="13" fill="#a29b8e">数据不足，先多练几场</text>`; return; }
+  const ymax = opts.max ? opts.max(list) : Math.max(...list.map(opts.y)) * 1.15;
+  const ymin = opts.min || 0;
+  const X = i => L + i * (W - L - R) / (n - 1);
+  const Y = v => T + (H - T - B) * (1 - (v - ymin) / (ymax - ymin));
+  const px = v => (Math.round(v*10)/10);
+  let grid = '', labels = '';
+  for (let g = 0; g <= 3; g++) {
+    const v = ymin + (ymax - ymin) * g / 3;
+    grid += `<line x1="${L}" y1="${Y(v)}" x2="${W-R}" y2="${Y(v)}" stroke="#f0e9db" stroke-width="1"/>`;
+    labels += `<text x="${L-5}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="#a29b8e">${px(v)}</text>`;
+  }
+  // x 轴日期（首/中/尾）
+  const dAt = i => list[i].date;
+  labels += `<text x="${X(0)}" y="${H-6}" text-anchor="start" font-size="10" fill="#a29b8e">${dAt(0).slice(5)}</text>`;
+  labels += `<text x="${X(Math.floor((n-1)/2))}" y="${H-6}" text-anchor="middle" font-size="10" fill="#a29b8e">${dAt(Math.floor((n-1)/2)).slice(5)}</text>`;
+  labels += `<text x="${X(n-1)}" y="${H-6}" text-anchor="end" font-size="10" fill="#a29b8e">${dAt(n-1).slice(5)}</text>`;
+  function path(vals, color, dash){
+    let dstr = '';
+    vals.forEach((v, i) => { if (v === null || v === undefined) return; dstr += (dstr ? 'L' : 'M') + X(i) + ' ' + Y(v) + ' '; });
+    if (!dstr) return '';
+    return `<path d="${dstr}" fill="none" stroke="${color}" stroke-width="${dash?1.5:2}" ${dash?'stroke-dasharray="5 4"':''} stroke-linejoin="round"/>`;
+  }
+  function movingAvg(win){
+    return list.map((_, i) => {
+      const seg = list.slice(Math.max(0, i - win + 1), i + 1);
+      return seg.reduce((a,s)=>a+opts.y(s),0) / seg.length;
+    });
+  }
+  let body = '';
+  for (const s of opts.extra(list) || []) body += path(s.vals, s.color, true);
+  body += path(list.map(opts.y), '#ff6f91');
+  list.forEach((s, i) => {
+    body += `<circle cx="${X(i)}" cy="${Y(opts.y(s))}" r="2.6" fill="#ff6f91"><title>${esc(s.date)} 第${s.session_no}场 ${esc(s.topic_alias || s.topic)}\n${esc(opts.tip(s))}</title></circle>`;
+  });
+  el.innerHTML = grid + labels + body;
+}
+
+function renderCharts(list){
+  const speedY = s => s.duration_seconds / s.total_questions;
+  svgChart(document.getElementById('chartSpeed'), list, {
+    y: speedY, min: 0,
+    max: l => Math.max(...l.map(speedY)) * 1.12,
+    tip: s => `${durText(s.duration_seconds)} ÷ ${s.total_questions} 题 = ${(s.duration_seconds/s.total_questions).toFixed(2)} 秒/题`,
+    extra: l => [
+      { vals: movingAvgLocal(l, speedY, 5), color: '#ffc99e' },
+      { vals: movingAvgLocal(l, speedY, 30), color: '#9db8d9' }
+    ]
+  });
+  const accY = s => s.total_questions ? s.correct_count / s.total_questions * 100 : 0;
+  svgChart(document.getElementById('chartAcc'), list, {
+    y: accY, min: 0, max: () => 100,
+    tip: s => `${s.correct_count}/${s.total_questions} = ${pct(s.correct_count, s.total_questions)}%`,
+    extra: l => [{ vals: movingAvgLocal(l, accY, 30), color: '#9db8d9' }]
+  });
+  svgChart(document.getElementById('chartVol'), list, {
+    y: s => s.total_questions, min: 0,
+    max: l => Math.max(...l.map(s => s.total_questions)) * 1.15,
+    tip: s => `${s.total_questions} 题 · 对 ${s.correct_count}`,
+    extra: () => []
+  });
+}
+function movingAvgLocal(list, fn, win){
+  return list.map((_, i) => {
+    const seg = list.slice(Math.max(0, i - win + 1), i + 1);
+    return seg.reduce((a,s)=>a+fn(s),0) / seg.length;
+  });
+}
+
+/* ---------- 题型对照 ---------- */
+function renderCmp(){
+  const rows = DATA.topics.map(t => {
+    const l = DATA.sessions.filter(s => s.topic_id === t.id);
+    const q = l.reduce((a,s)=>a+s.total_questions,0);
+    const c = l.reduce((a,s)=>a+s.correct_count,0);
+    let fastest = Infinity;
+    for (const s of l) if (s.duration_seconds) fastest = Math.min(fastest, s.duration_seconds/s.total_questions);
+    const avg = l.reduce((a,s)=>a+(s.duration_seconds||0),0) / q;
+    return `<tr><td>${esc(t.name)}</td><td>${l.length} 次</td><td>${q?(avg.toFixed(1)):'—'} 秒</td><td>${isFinite(fastest)?fastest.toFixed(1)+' 秒':'—'}</td><td><b>${q?pct(c,q)+'%':'—'}</b></td><td>${q} 题</td></tr>`;
+  }).join('');
+  document.getElementById('cmpBody').innerHTML = rows;
+}
+
+/* ---------- 记录列表 ---------- */
+function renderList(){
+  const list = filtered();
+  const isParent = ME && ME.role === 'parent';
+  document.getElementById('cnt').textContent = `共 ${list.length} 条（所选题型）`;
+  const shown = list.slice(0, SHOWN);
+  document.getElementById('list').innerHTML = shown.length ? shown.map(s => {
+    const wrongs = (s.wrong_items || []).map(w =>
+      `${esc(w.expr)} = ${esc(w.answer_given || '？')}（应 ${esc(w.answer_correct || '？')}）${w.note ? '，' + esc(w.note) : ''}`).join('；');
+    const ops = isParent ? `<span class="ops">
+      <button class="op-edit" onclick='openEdit(${esc(JSON.stringify(s))})'>编辑</button>
+      <button class="op-del" onclick="del(${s.id})">删除</button></span>` : '';
+    return `<div class="rec">
+      <div class="hd"><span class="pt">${mdText(s.date)} ${weekCn(s.date)} · 第${s.session_no}场</span>
+        <span class="tag t-topic">${esc(s.topic_alias || s.topic)}</span>
+        ${s.duration_estimated ? '<span class="tag t-est">用时≈估算</span>' : ''}
+        ${s.source === 'import_xiaoxia' ? '<span class="tag t-est">自小虾站迁入</span>' : ''}
+        <span class="pd">${s.duration_estimated ? '≈' : ''}${durText(s.duration_seconds)} · 对 ${s.correct_count}/${s.total_questions} · ${pct(s.correct_count, s.total_questions)}%</span>${ops}</div>
+      ${wrongs ? `<div class="wrongs">✗ ${wrongs}</div>` : ''}
+      ${s.note ? `<div class="note">${esc(s.note)}</div>` : ''}
+    </div>`;
+  }).join('') : '<div class="empty">该题型还没有记录</div>';
+  document.getElementById('more').style.display = list.length > SHOWN ? '' : 'none';
+}
+function loadMore(){ SHOWN += 30; renderList(); }
+
+function renderAll(){
+  const list = filtered();
+  renderChips(); renderStats(list); renderCharts(list); renderCmp(); renderList(); renderDots();
+}
+
+/* ---------- 录入/编辑/删除 ---------- */
+const TOPIC_FALLBACK = [];
+function topicOptions(){
+  return DATA.topics.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+}
+function addWrongRow(v){
+  v = v || {};
+  const div = document.createElement('div');
+  div.className = 'row3';
+  div.innerHTML = `<input class="w1" placeholder="题式：如 54+27" value="${esc(v.expr||'')}">
+    <input class="w2" placeholder="她写的" value="${esc(v.answer_given||'')}">
+    <input class="w2" placeholder="正确" value="${esc(v.answer_correct||'')}">
+    <input class="w3" placeholder="错因（可空）" value="${esc(v.note||'')}">`;
+  document.getElementById('wrongRows').appendChild(div);
+}
+function openCreate(){
+  EDIT_ID = null;
+  document.getElementById('mTitle').textContent = '补录一场';
+  document.getElementById('fDate').value = new Date(Date.now() + 8*3600*1000).toISOString().slice(0,10);
+  document.getElementById('fSession').value = '';
+  document.getElementById('fTopic').innerHTML = topicOptions();
+  document.getElementById('fMin').value = ''; document.getElementById('fSec').value = '';
+  document.getElementById('fEst').checked = false;
+  document.getElementById('fTotal').value = 22; document.getElementById('fCorrect').value = 22;
+  document.getElementById('wrongRows').innerHTML = '';
+  document.getElementById('fNote').value = '';
+  document.getElementById('mMsg').textContent = '';
+  document.getElementById('mask').style.display = 'flex';
+}
+function openEdit(s){
+  EDIT_ID = s.id;
+  document.getElementById('mTitle').textContent = `编辑：${s.date} 第${s.session_no}场`;
+  document.getElementById('fDate').value = s.date;
+  document.getElementById('fSession').value = s.session_no;
+  document.getElementById('fTopic').innerHTML = topicOptions();
+  document.getElementById('fTopic').value = s.topic_id;
+  const sec = s.duration_seconds || 0;
+  document.getElementById('fMin').value = Math.floor(sec/60);
+  document.getElementById('fSec').value = sec%60;
+  document.getElementById('fEst').checked = !!s.duration_estimated;
+  document.getElementById('fTotal').value = s.total_questions;
+  document.getElementById('fCorrect').value = s.correct_count;
+  document.getElementById('wrongRows').innerHTML = '';
+  (s.wrong_items || []).forEach(w => addWrongRow(w));
+  document.getElementById('fNote').value = s.note || '';
+  document.getElementById('mMsg').textContent = '';
+  document.getElementById('mask').style.display = 'flex';
+}
+function closeModal(){ document.getElementById('mask').style.display = 'none'; }
+function collectWrong(){
+  const rows = document.querySelectorAll('#wrongRows .row3');
+  const out = [];
+  rows.forEach(r => {
+    const ins = r.querySelectorAll('input');
+    const expr = ins[0].value.trim();
+    if (!expr) return;
+    out.push({ expr, answer_given: ins[1].value.trim(), answer_correct: ins[2].value.trim(), note: ins[3].value.trim() });
+  });
+  return out;
+}
+async function save(){
+  const msg = document.getElementById('mMsg');
+  const m = parseInt(document.getElementById('fMin').value, 10) || 0;
+  const s = parseInt(document.getElementById('fSec').value, 10) || 0;
+  const dur = (m * 60 + s) || null;
+  const body = {
+    date: document.getElementById('fDate').value,
+    session_no: document.getElementById('fSession').value || null,
+    topic_id: parseInt(document.getElementById('fTopic').value, 10),
+    duration_seconds: dur,
+    duration_estimated: document.getElementById('fEst').checked ? 1 : 0,
+    total_questions: parseInt(document.getElementById('fTotal').value, 10),
+    correct_count: parseInt(document.getElementById('fCorrect').value, 10),
+    wrong_items: collectWrong(),
+    note: document.getElementById('fNote').value
+  };
+  const url = EDIT_ID ? '/api/math/sessions/' + EDIT_ID : '/api/math/sessions';
+  const r = await fetch(url, { method: EDIT_ID ? 'PUT' : 'POST',
+    headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const d = await r.json();
+  if (d.ok) { closeModal(); await load(); }
+  else { msg.textContent = d.error || '保存失败'; msg.className = 'msg err'; }
+}
+async function del(id){
+  if (!confirm('确定删除这一场记录？删除后不可恢复')) return;
+  const r = await fetch('/api/math/sessions/' + id, { method: 'DELETE' });
+  const d = await r.json();
+  if (!d.ok) alert(d.error || '删除失败');
+  load();
+}
+async function addMark(){
+  const date = document.getElementById('mkDate').value;
+  const note = document.getElementById('mkNote').value.trim();
+  if (!date || !note) { alert('先选日期、填标记内容'); return; }
+  const r = await fetch('/api/math/marks', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ date, note }) });
+  const d = await r.json();
+  if (!d.ok) alert(d.error || '失败');
+  load();
+}
+async function delMark(id){
+  if (!confirm('删除这条日历标记？')) return;
+  const r = await fetch('/api/math/marks/' + id, { method: 'DELETE' });
+  const d = await r.json();
+  if (!d.ok) alert(d.error || '失败');
+  load();
+}
+async function logout(){ await fetch('/api/logout', {method:'POST'}); location.href='/login'; }
+
+async function load(){
+  const r = await fetch('/api/math/all');
+  if (r.status === 401) { location.href = '/login'; return; }
+  const d = await r.json();
+  if (!d.ok) { document.getElementById('list').innerHTML = '<div class="empty">' + esc(d.error || '加载失败') + '</div>'; return; }
+  DATA = d;
+  renderAll();
+}
+whoami().then(load);
+</script>
+</body>
+</html>
