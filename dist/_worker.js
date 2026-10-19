@@ -482,9 +482,12 @@ async function apiMathSessionUpdate(request, env, u, id) {
 async function apiMathSessionDelete(request, env, u, id) {
   if (u.role !== 'parent') return json({ error: '仅家长可删除' }, 403);
   const sid = await getStudentId(env);
+  // 先删子表（math_wrong_items FK 引用场次）再删主表：D1 默认外键强制，先删主表会 500
+  await env.DB.prepare(
+    `DELETE FROM math_wrong_items WHERE session_id IN
+     (SELECT id FROM math_sessions WHERE id = ? AND student_id = ?)`).bind(id, sid).run();
   const r = await env.DB.prepare('DELETE FROM math_sessions WHERE id = ? AND student_id = ?').bind(id, sid).run();
   if (!r.meta.changes) return json({ error: '记录不存在' }, 404);
-  await env.DB.prepare('DELETE FROM math_wrong_items WHERE session_id = ?').bind(id).run();
   return json({ ok: true });
 }
 
