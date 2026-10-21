@@ -210,6 +210,23 @@ if not MATH_ONLY:
 # ---- v10 口算记录 ----
 MATH_TEST_DATE = '2099-01-01'   # 固定测试日期：重入前先清，物理隔离不碰真数据
 
+def math_truth():
+    """D1 直查真数据基线（口径同 worker getStudentId=yueyue，排除测试日期）。
+    线上 API 与之对账——代录新场次后无需再改本脚本。"""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from cf_d1 import find_db, execute_sql
+    db = find_db()
+    assert db, 'D1 zhixidao-db 不可达（对账基线取不到）'
+    q = lambda s: execute_sql(db, s)[1]
+    sess = q("SELECT COUNT(*) n, SUM(total_questions) t, SUM(correct_count) c FROM math_sessions "
+             "WHERE student_id=(SELECT id FROM students WHERE code='yueyue' AND active=1) "
+             "AND date != '%s'" % MATH_TEST_DATE)[0]
+    marks = q("SELECT COUNT(*) n FROM math_marks "
+              "WHERE student_id=(SELECT id FROM students WHERE code='yueyue' AND active=1) "
+              "AND date != '%s'" % MATH_TEST_DATE)[0]
+    topics = q('SELECT COUNT(*) n FROM math_topics')[0]
+    return sess['n'], topics['n'], marks['n'], sess['t'], sess['c']
+
 def math_clean():
     for _ in range(6):
         s, d = call('GET', '/api/math/all')
@@ -221,13 +238,16 @@ def math_clean():
         for x in lm: call('DELETE', '/api/math/marks/%d' % x['id'])
     raise SystemExit('口算测试数据 4 轮未清零')
 
+TRUTH = math_truth()   # (场次, 题型, 标记, 总题, 总对) —— 动态基线，录新数据自动跟上
 d0 = math_clean()
-fails += not check('口算-真数据(106场/6题型/1标记/2398题/2351对)',
-                   len(d0.get('sessions', [])) == 106 and len(d0.get('topics', [])) == 6
-                   and len(d0.get('marks', [])) == 1
-                   and sum(x['total_questions'] for x in d0['sessions']) == 2398
-                   and sum(x['correct_count'] for x in d0['sessions']) == 2351,
-                   's=%d t=%d mk=%d' % (len(d0.get('sessions', [])), len(d0.get('topics', [])), len(d0.get('marks', []))))
+fails += not check('口算-真数据(对账D1: %d场/%d题型/%d标记/%d题/%d对)' % TRUTH,
+                   len(d0.get('sessions', [])) == TRUTH[0] and len(d0.get('topics', [])) == TRUTH[1]
+                   and len(d0.get('marks', [])) == TRUTH[2]
+                   and sum(x['total_questions'] for x in d0['sessions']) == TRUTH[3]
+                   and sum(x['correct_count'] for x in d0['sessions']) == TRUTH[4],
+                   'api(s=%d t=%d mk=%d) vs d1(s=%d t=%d mk=%d)' % (
+                       len(d0.get('sessions', [])), len(d0.get('topics', [])), len(d0.get('marks', [])),
+                       TRUTH[0], TRUTH[1], TRUTH[2]))
 
 s, d = call('POST', '/api/math/sessions', {
     'date': MATH_TEST_DATE, 'topic_id': 1, 'duration_seconds': 100, 'total_questions': 22,
@@ -264,11 +284,11 @@ if mm:
 d0 = math_clean()
 fails += not check('口算-清理干净+真数据无损',
                    not [x for x in d0['sessions'] if x['date'] == MATH_TEST_DATE]
-                   and len(d0['sessions']) == 106 and len(d0['marks']) == 1)
+                   and len(d0['sessions']) == TRUTH[0] and len(d0['marks']) == TRUTH[2])
 
 s, d = call('GET', '/api/overview')
-fails += not check('口算-总览摘要', s == 200 and d.get('math_last') and d.get('math_total') == 106,
-                   'streak=%s total=%s' % (d.get('math_streak'), d.get('math_total')))
+fails += not check('口算-总览摘要', s == 200 and d.get('math_last') and d.get('math_total') == TRUTH[0],
+                   'streak=%s total=%s (d1场次=%s)' % (d.get('math_streak'), d.get('math_total'), TRUTH[0]))
 
 s, d = fetch_text_retry('/math.html')
 fails += not check('口算页(门禁内)', s == 200 and '补录一场' in d and '题型对照' in d)
