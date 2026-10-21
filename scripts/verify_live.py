@@ -165,6 +165,12 @@ if not MATH_ONLY:
     code = status_no_redirect('/cards.html')
     fails += not check('纸卡页未登录 302', code == 302, 'code=%s' % code)
 
+    s, d = fetch_text_retry('/cards-math.html')
+    fails += not check('口算口诀卡页(打印/PDF, 门禁内)', s == 200 and '十几减几' in d and 'window.print' in d)
+
+    code = status_no_redirect('/cards-math.html')
+    fails += not check('口算口诀卡页未登录 302', code == 302, 'code=%s' % code)
+
     # ---- P1.5 考卷库 ----
     s, d = fetch_text_retry('/papers.html')
     fails += not check('考卷库页(门禁内)', s == 200 and '考卷库' in d and 'api/papers' in d)
