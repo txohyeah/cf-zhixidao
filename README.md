@@ -11,7 +11,7 @@
 ## 结构
 - `schema.sql` — 9 表（students/users/levels/checkin/papers/sessions/login_throttle + P1: wrong_questions/weak_points，D1=zhixidao-db）
 - `worker_src/_worker.js` → `dist/_worker.js` — 全站门禁 + API（login/logout/me/me-password/overview/checkin/papers）
-- `dist/` — index.html（总览：14天点阵+连胜+13关卡+**错题弱项榜**+考卷摘要最近3张+用法说明）、papers.html（**考卷库**：增删改查+分页，P1.5）、cards.html（过关卡纸卡，打印/存PDF，门禁内）、login.html、favicon
+- `dist/` — index.html（总览：14天点阵+连胜+13关卡+**错题弱项榜**+考卷摘要最近3张+口算摘要+用法说明）、papers.html（**考卷库**：增删改查+分页，P1.5）、cards.html（过关卡纸卡，打印/存PDF，门禁内）、cards-math.html（**口算口诀卡 v10.1**：十几减几36式+凑十加法26式+家长页；源文件在 workspace `media/`，`scripts/build_cards.py` 参数化多卡构建）、math.html（**口算记录 v10**）、login.html、favicon
 - `scripts/cf_d1.py` — D1 桥接（create-bound/exec/query/info）
 - `scripts/seed_users.py` — 生成用户种子（读 .secrets，输出仅含哈希；**重跑会使所有会话失效**）
 - `scripts/sync_cuoti.py` — P1 错题同步：`~/.cuoti/cuoti.db`（只读）→ D1 副本全量替换；只迁 `STUDENT_MAP` 映射表内的错题，不带姓名/学校，测试学生数据不迁
