@@ -1,9 +1,10 @@
 -- ============================================================
--- 智习岛 (zhixidao) · P0 schema
--- 架构：D1 = 站点真源（打卡 + 考卷时间线）；错题工作库仍在本地
---       cuoti SQLite，P1 起单向同步进 D1（只展示，不回写）
+-- 智习岛 (zhixidao) · schema（v11 起 = 全量初始化形态）
+-- 架构：D1 = 站点真源（打卡 + 考卷 + 口算 + 错题 + 知识体系）
+--       错题真源已于 v11 迁入 D1（拍照识别→agent 直写），本地 ~/.cuoti
+--       转只读历史归档，sync_cuoti.py 退役；weak_points 表退役（实时聚合）
 -- 设计约束：所有业务表挂 student_id（多学生将来直接复用）；
---           papers.source 预留 cuoti 迁移位
+--           知识树/例题库为家庭公共资产不挂 student
 -- ============================================================
 
 -- ---------- 账号与会话（照搬 cf-crypto-site 模式） ----------
@@ -105,7 +106,8 @@ CREATE TABLE IF NOT EXISTS wrong_questions (
   kp_codes      TEXT,                       -- JSON 数组
   kp_names      TEXT,                       -- JSON 数组（展示用）
   stubborn      INTEGER DEFAULT 0,          -- 顽固错题：近 30 天错 ≥3 次
-  sync_at       TEXT
+  sync_at       TEXT,                       -- v11 起停用（真源迁入，无同步链）
+  node_id       INTEGER REFERENCES knowledge_nodes(id)  -- v11：挂知识树（真源迁移时加列）
 );
 CREATE INDEX IF NOT EXISTS idx_wq ON wrong_questions(student_code, is_archived, subject_code);
 
@@ -175,3 +177,56 @@ CREATE TABLE IF NOT EXISTS math_marks (
   created_at TEXT DEFAULT (datetime('now')),
   UNIQUE(student_id, date)
 );
+
+-- ============================================================
+-- v11：知识体系（知识树 + 例题库 + 考卷逐题）
+-- 详见 知识体系扩展方案-v11.md；节点永不物理删除（status=retired）
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS knowledge_nodes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  parent_id   INTEGER REFERENCES knowledge_nodes(id),
+  level       INTEGER NOT NULL,               -- 1=学科 2=册 3=章 4=节 5+=知识点
+  name        TEXT NOT NULL,
+  subject     TEXT,                           -- 冗余（写入侧传播）
+  grade       TEXT,                           -- 冗余（'二上'…'九下'/'大一…'）
+  is_zhongkao INTEGER NOT NULL DEFAULT 0,     -- 中考考点，只标实际考点粒度
+  tags        TEXT NOT NULL DEFAULT '[]',     -- JSON 数组：教材版本等低频属性
+  sort        INTEGER NOT NULL DEFAULT 0,
+  status      TEXT NOT NULL DEFAULT 'active', -- active | retired（软删除）
+  note        TEXT,
+  created_at  TEXT DEFAULT (datetime('now')),
+  updated_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_kn_parent ON knowledge_nodes(parent_id, sort);
+CREATE INDEX IF NOT EXISTS idx_kn_filter ON knowledge_nodes(subject, grade);
+
+CREATE TABLE IF NOT EXISTS questions (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  node_id     INTEGER NOT NULL REFERENCES knowledge_nodes(id),
+  qtype       TEXT,                           -- choice|fill|apply|proof|solution
+  difficulty  INTEGER,                        -- 1-5
+  stem        TEXT NOT NULL,
+  answer      TEXT,
+  analysis    TEXT,
+  image_ref   TEXT,                           -- 题图（隐私红线未拍板，留列不启用）
+  source      TEXT DEFAULT 'agent',
+  status      TEXT NOT NULL DEFAULT 'active',
+  note        TEXT,
+  created_at  TEXT DEFAULT (datetime('now')),
+  updated_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_q_node ON questions(node_id);
+
+CREATE TABLE IF NOT EXISTS paper_items (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  paper_id   INTEGER NOT NULL REFERENCES papers(id),
+  qno        TEXT NOT NULL,                  -- 题号文本，含 '17(2)'
+  node_id    INTEGER REFERENCES knowledge_nodes(id),
+  correct    INTEGER,                        -- 1|0|NULL(未判)
+  score      REAL, full_score REAL,
+  note       TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(paper_id, qno)
+);
+CREATE INDEX IF NOT EXISTS idx_pi_node ON paper_items(node_id);

@@ -1,6 +1,7 @@
 // 智习岛 (zhixidao) — 家庭学习小站
 // 基于 cf-crypto-site worker 改造：用户名+密码（PBKDF2 会话 + 登录限速）+ D1
 // P0 API: /api/login /api/logout /api/me /api/me/password /api/overview /api/checkin /api/papers
+// v11 API: /api/kb/nodes /api/kb/questions /api/papers/:id/items /api/assess（知识体系与三色灯）
 // v10 API: /api/math/all /api/math/sessions(+/:id) /api/math/marks(+/:id)
 // 隐私：站内只用昵称；全站登录后可见；kid 账号（P2）只能打卡页
 const COOKIE = 'zhixidao_auth';
@@ -242,18 +243,23 @@ async function apiOverview(request, env) {
   const papers = (await env.DB.prepare(
     `SELECT id, date, title, analysis_md, source, subject, term FROM papers
      WHERE student_id = ? ORDER BY date DESC, id DESC LIMIT 3`).bind(sid).all()).results;
-  // P1：错题展示副本（sync_cuoti.py 全量替换，此处只读；student_code 是文本 'yueyue'）。
+  // v11：错题真源与实时弱项榜；student_code 是文本 'yueyue'。
   // 防卡顿：归档过滤下推 SQL + LIMIT 兜底（错题 200 条/弱项 30 条封顶，超量再考虑分页）
   const wq = (await env.DB.prepare(
     `SELECT id, subject_code, title, stem, answer, analysis, question_type, status,
-            wrong_count, correct_count, last_wrong_at, kp_names, stubborn, created_at
+            wrong_count, correct_count, last_wrong_at, kp_names, stubborn, created_at, node_id
      FROM wrong_questions WHERE student_code = ? AND is_archived = 0
      ORDER BY stubborn DESC, wrong_count DESC, created_at DESC LIMIT 200`).bind('yueyue').all()).results;
   const wqTotal = (await env.DB.prepare(
     `SELECT COUNT(*) AS n FROM wrong_questions WHERE student_code = ? AND is_archived = 0`).bind('yueyue').first());
   const wps = (await env.DB.prepare(
-    `SELECT kp_code, kp_name, subject_code, question_count, wrong_count, last_wrong_at, stubborn_count
-     FROM weak_points WHERE student_code = ?
+    `SELECT k.value AS kp_code, k.value AS kp_name, w.subject_code,
+            COUNT(*) AS question_count, SUM(COALESCE(w.wrong_count, 0)) AS wrong_count,
+            MAX(w.last_wrong_at) AS last_wrong_at,
+            SUM(CASE WHEN w.stubborn = 1 THEN 1 ELSE 0 END) AS stubborn_count
+     FROM wrong_questions w, json_each(CASE WHEN json_valid(w.kp_names) THEN w.kp_names ELSE '[]' END) k
+     WHERE w.student_code = ? AND w.is_archived = 0 AND k.type = 'text'
+     GROUP BY w.subject_code, k.value
      ORDER BY wrong_count DESC, question_count DESC LIMIT 30`).bind('yueyue').all()).results;
   // v10：口算摘要（最近一场 + 连胜 + 总场次）。连胜只按有数据的场次算，
   // math_marks（在校完成无数据）在点阵上单独显示、不计数不断签
@@ -516,6 +522,195 @@ async function apiMathMarkDelete(request, env, u, id) {
   return json({ ok: true });
 }
 
+// ---------- 业务：知识体系（v11，只软删除，批量先校验再写入） ----------
+function kbPage(url) {
+  return {
+    limit: Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit'), 10) || 200)),
+    offset: Math.max(0, parseInt(url.searchParams.get('offset'), 10) || 0)
+  };
+}
+async function apiKbList(request, env, kind) {
+  const url = new URL(request.url);
+  const sp = url.searchParams;
+  const { limit, offset } = kbPage(url);
+  const nodes = kind === 'nodes';
+  const where = ['status = ?'];
+  const args = [sp.get('status') || 'active'];
+  for (const key of nodes ? ['id', 'subject', 'grade', 'level'] : ['node_id']) {
+    if (sp.get(key)) { where.push(key + ' = ?'); args.push(sp.get(key)); }
+  }
+  if (nodes && sp.has('parent_id')) {
+    if (sp.get('parent_id') === '' || sp.get('parent_id') === 'null') where.push('parent_id IS NULL');
+    else { where.push('parent_id = ?'); args.push(sp.get('parent_id')); }
+  }
+  const rows = (await env.DB.prepare(
+    `SELECT * FROM ${nodes ? 'knowledge_nodes' : 'questions'} WHERE ${where.join(' AND ')}
+     ORDER BY ${nodes ? 'sort, id' : 'id'} LIMIT ? OFFSET ?`).bind(...args, limit, offset).all()).results;
+  return json({ ok: true, [kind]: rows, limit, offset });
+}
+async function apiKbWrite(request, env, u, kind, id) {
+  if (u.role !== 'parent') return json({ error: '仅家长可编辑知识体系' }, 403);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: 'JSON 格式错误' }, 400); }
+  const nodes = kind === 'nodes';
+  const table = nodes ? 'knowledge_nodes' : 'questions';
+  const rows = Array.isArray(body) ? body : [body];
+  if (!rows.length || rows.length > 500 || (id && Array.isArray(body))) return json({ error: '批量需为 1-500 条，编辑需单对象' }, 400);
+  if (id && !await env.DB.prepare(`SELECT id FROM ${table} WHERE id = ?`).bind(id).first()) {
+    return json({ error: '记录不存在' }, 404);
+  }
+  const fields = nodes
+    ? ['name', 'grade', 'level', 'is_zhongkao', 'tags', 'sort', 'note', 'status']
+    : ['node_id', 'qtype', 'difficulty', 'stem', 'answer', 'analysis', 'image_ref', 'source', 'note', 'status'];
+  const ops = [];
+  for (const row of rows) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) return json({ error: '记录需为对象' }, 400);
+    const data = {};
+    for (const key of fields) if (Object.prototype.hasOwnProperty.call(row, key)) data[key] = row[key];
+    if (!id && nodes) {
+      data.parent_id = row.parent_id == null || row.parent_id === '' ? null : row.parent_id;
+      data.subject = row.subject == null ? null : row.subject;
+      if (data.level === undefined) data.level = 1;
+    }
+    const required = nodes ? 'name' : 'stem';
+    if ((!id || required in data) && (typeof data[required] !== 'string' || !data[required].trim())) {
+      return json({ error: required + ' 必填' }, 400);
+    }
+    if (required in data) data[required] = data[required].trim();
+    if ('status' in data && !['active', 'retired'].includes(data.status)) return json({ error: 'status 仅支持 active/retired' }, 400);
+    if ('tags' in data) {
+      if (!Array.isArray(data.tags)) return json({ error: 'tags 需为数组' }, 400);
+      data.tags = JSON.stringify(data.tags);
+    }
+    for (const key of ['level', 'sort', 'is_zhongkao', 'difficulty', 'node_id', 'parent_id']) {
+      if (!(key in data) || data[key] === null) continue;
+      if (!Number.isInteger(data[key]) || (['level', 'node_id', 'parent_id'].includes(key) && data[key] < 1)) {
+        return json({ error: key + ' 需为有效整数' }, 400);
+      }
+    }
+    if ('level' in data && data.level === null) return json({ error: 'level 不能为空' }, 400);
+    if ('sort' in data && data.sort === null) return json({ error: 'sort 不能为空' }, 400);
+    if ('is_zhongkao' in data && ![0, 1].includes(data.is_zhongkao)) return json({ error: 'is_zhongkao 需为 0/1' }, 400);
+    if ('difficulty' in data && data.difficulty !== null && (data.difficulty < 1 || data.difficulty > 5)) return json({ error: 'difficulty 需在 1-5' }, 400);
+    if (!nodes && ((!id && !data.node_id) || ('node_id' in data && !data.node_id))) return json({ error: 'node_id 必填' }, 400);
+    const ref = nodes ? data.parent_id : data.node_id;
+    if (ref != null) {
+      const parent = await env.DB.prepare('SELECT id, status FROM knowledge_nodes WHERE id = ?').bind(ref).first();
+      if (!parent || parent.status !== 'active') return json({ error: '关联节点不存在或已退役' }, 400);
+    }
+    for (const value of Object.values(data)) {
+      if (value !== null && !['string', 'number'].includes(typeof value)) return json({ error: '字段需为文本或数字' }, 400);
+    }
+    // subject/grade 冗余由写入侧 agent 传播；根节点允许为空，不自动覆盖调用方属性。
+    const keys = Object.keys(data);
+    if (!keys.length) return json({ error: '没有可更新字段' }, 400);
+    if (id) {
+      ops.push(env.DB.prepare(`UPDATE ${table} SET ${keys.map(k => k + ' = ?').join(', ')}, updated_at = datetime('now') WHERE id = ?`)
+        .bind(...keys.map(k => data[k]), id));
+    } else {
+      ops.push(env.DB.prepare(`INSERT INTO ${table} (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`)
+        .bind(...keys.map(k => data[k])));
+    }
+  }
+  const results = await env.DB.batch(ops);
+  return json({ ok: true, ids: id ? [id] : results.map(r => r.meta.last_row_id) });
+}
+
+// 考卷细档按 paper_id + qno 幂等覆盖；未判 correct 保留 NULL。
+async function apiPaperItems(request, env, u, id) {
+  if (u.role !== 'parent') return json({ error: '仅家长可录入考卷逐题' }, 403);
+  const sid = await getStudentId(env);
+  if (!await env.DB.prepare('SELECT id FROM papers WHERE id = ? AND student_id = ?').bind(id, sid).first()) {
+    return json({ error: '考卷不存在' }, 404);
+  }
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: 'JSON 格式错误' }, 400); }
+  if (!Array.isArray(body) || !body.length || body.length > 500) return json({ error: '需为 1-500 条数组' }, 400);
+  const ops = [];
+  for (const row of body) {
+    if (!row || typeof row !== 'object' || !['string', 'number'].includes(typeof row.qno) || !String(row.qno).trim()) {
+      return json({ error: 'qno 必填' }, 400);
+    }
+    const correct = row.correct === undefined ? null : row.correct;
+    if (![0, 1, null].includes(correct)) return json({ error: 'correct 仅支持 0/1/null' }, 400);
+    if (row.node_id != null && (!Number.isInteger(row.node_id) || !await env.DB.prepare(
+      'SELECT id FROM knowledge_nodes WHERE id = ? AND status = ?').bind(row.node_id, 'active').first())) {
+      return json({ error: '关联节点不存在或已退役' }, 400);
+    }
+    for (const key of ['score', 'full_score']) {
+      if (row[key] != null && (typeof row[key] !== 'number' || !Number.isFinite(row[key]))) return json({ error: key + ' 需为数字' }, 400);
+    }
+    if (row.note != null && typeof row.note !== 'string') return json({ error: 'note 需为文本' }, 400);
+    ops.push(env.DB.prepare(
+      `INSERT INTO paper_items (paper_id, qno, node_id, correct, score, full_score, note)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(paper_id, qno) DO UPDATE SET node_id = excluded.node_id,
+         correct = excluded.correct, score = excluded.score, full_score = excluded.full_score, note = excluded.note`)
+      .bind(id, String(row.qno).trim(), row.node_id ?? null, correct, row.score ?? null, row.full_score ?? null, row.note ?? null));
+  }
+  await env.DB.batch(ops);
+  return json({ ok: true, count: ops.length });
+}
+
+// 三色灯：单条错题 last_wrong_at 在近 30 天且累计 wrong_count >= 3 近似红灯，
+// 其余有错为黄；有答对且无近 30 天错误为绿；未判考卷题不算练习记录。
+// term 仅在 papers 有列：节点按 grade 过滤，考卷再按 term 过滤，错题保留历史口径。
+// 递归祖先映射在分页前聚合，避免跨页子节点漏灯；UNION 防意外环导致无限递归。
+async function apiAssess(request, env) {
+  const url = new URL(request.url);
+  const sp = url.searchParams;
+  const student = sp.get('student') || 'yueyue';
+  const scope = sp.get('scope') || '';
+  if (!['', 'term', 'zhongkao'].includes(scope)) return json({ error: 'scope 仅支持 term/zhongkao/空' }, 400);
+  const sid = student === 'yueyue' ? await getStudentId(env) :
+    (await env.DB.prepare('SELECT id FROM students WHERE code = ? AND active = 1').bind(student).first())?.id;
+  if (!sid) return json({ error: '学生不存在' }, 404);
+  const { limit, offset } = kbPage(url);
+  const where = ["status = 'active'"];
+  const args = [];
+  for (const key of ['subject', 'grade']) {
+    if (sp.get(key)) { where.push(key + ' = ?'); args.push(sp.get(key)); }
+  }
+  if (scope === 'zhongkao') where.push('is_zhongkao = 1');
+  const term = scope === 'term' ? sp.get('term') || '' : '';
+  const nodes = (await env.DB.prepare(
+    `WITH RECURSIVE selected AS (
+       SELECT id FROM knowledge_nodes WHERE ${where.join(' AND ')}
+     ), ancestry(node_id, ancestor_id) AS (
+       SELECT id, id FROM selected
+       UNION
+       SELECT a.node_id, n.parent_id FROM ancestry a JOIN knowledge_nodes n ON n.id = a.ancestor_id
+       WHERE n.parent_id IS NOT NULL
+     ), evidence AS (
+       SELECT node_id, COALESCE(wrong_count, 0) AS wrong_count,
+              COALESCE(correct_count, 0) AS correct_count, last_wrong_at,
+              CASE WHEN julianday(last_wrong_at) >= julianday('now', '-30 days') AND wrong_count >= 3 THEN 2
+                   WHEN correct_count > 0 AND (last_wrong_at IS NULL OR julianday(last_wrong_at) < julianday('now', '-30 days')) THEN 0
+                   ELSE 1 END AS lamp
+       FROM wrong_questions WHERE student_code = ? AND node_id IS NOT NULL
+       UNION ALL
+       SELECT i.node_id, CASE WHEN i.correct = 0 THEN 1 ELSE 0 END,
+              CASE WHEN i.correct = 1 THEN 1 ELSE 0 END,
+              CASE WHEN i.correct = 0 THEN p.date ELSE NULL END,
+              CASE WHEN i.correct = 0 THEN 1 ELSE 0 END
+       FROM paper_items i JOIN papers p ON p.id = i.paper_id
+       WHERE p.student_id = ? AND i.correct IS NOT NULL AND (? = '' OR p.term = ?)
+     ), direct AS (
+       SELECT node_id, SUM(wrong_count) AS wrong_count, SUM(correct_count) AS correct_count,
+              MAX(last_wrong_at) AS last_wrong_at, MAX(lamp) AS lamp
+       FROM evidence GROUP BY node_id
+     )
+     SELECT n.id AS node_id, n.parent_id, n.name, COALESCE(MAX(d.lamp), -1) AS lamp,
+            COALESCE(SUM(d.wrong_count), 0) AS wrong_count,
+            COALESCE(SUM(d.correct_count), 0) AS correct_count, MAX(d.last_wrong_at) AS last_wrong_at
+     FROM (SELECT DISTINCT ancestor_id FROM ancestry) ids JOIN knowledge_nodes n ON n.id = ids.ancestor_id
+     LEFT JOIN ancestry a ON a.ancestor_id = n.id LEFT JOIN direct d ON d.node_id = a.node_id
+     WHERE n.status = 'active'
+     GROUP BY n.id ORDER BY n.sort, n.id LIMIT ? OFFSET ?`)
+    .bind(...args, student, sid, term, term, limit, offset).all()).results;
+  return json({ ok: true, student, scope, term, nodes, limit, offset });
+}
+
 // ---------- main fetch ----------
 export default {
   async fetch(request, env) {
@@ -539,6 +734,17 @@ export default {
       const pm = p.match(/^\/api\/papers\/(\d+)$/);
       if (pm && method === 'PUT') return apiPaperUpdate(request, env, u, parseInt(pm[1], 10));
       if (pm && method === 'DELETE') return apiPaperDelete(request, env, u, parseInt(pm[1], 10));
+      if (p === '/api/kb/nodes' && method === 'GET') return apiKbList(request, env, 'nodes');
+      if (p === '/api/kb/nodes' && method === 'POST') return apiKbWrite(request, env, u, 'nodes');
+      const kn = p.match(/^\/api\/kb\/nodes\/(\d+)$/);
+      if (kn && method === 'PUT') return apiKbWrite(request, env, u, 'nodes', parseInt(kn[1], 10));
+      if (p === '/api/kb/questions' && method === 'GET') return apiKbList(request, env, 'questions');
+      if (p === '/api/kb/questions' && method === 'POST') return apiKbWrite(request, env, u, 'questions');
+      const kq = p.match(/^\/api\/kb\/questions\/(\d+)$/);
+      if (kq && method === 'PUT') return apiKbWrite(request, env, u, 'questions', parseInt(kq[1], 10));
+      const pi = p.match(/^\/api\/papers\/(\d+)\/items$/);
+      if (pi && method === 'POST') return apiPaperItems(request, env, u, parseInt(pi[1], 10));
+      if (p === '/api/assess' && method === 'GET') return apiAssess(request, env);
       if (p === '/api/math/all' && method === 'GET') return apiMathAll(request, env);
       if (p === '/api/math/sessions' && method === 'POST') return apiMathSessionCreate(request, env, u);
       const mm = p.match(/^\/api\/math\/sessions\/(\d+)$/);
