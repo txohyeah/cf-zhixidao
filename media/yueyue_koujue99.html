@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玥玥 · 乘法口诀表</title>
+<style>
+  @page { size:A4; margin:12mm 12mm 14mm; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  :root { --fg:#2F7D6D; --bg:#EDF5F2; --border:#BFE0D6; }
+  body { font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif; color:#263E37; line-height:1.45; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .page { page-break-after:always; }
+  .page:last-child { page-break-after:auto; }
+  @media screen { html body { background:var(--bg); } }
+  h1 { font-family:KaiTi,STKaiti,"Kaiti SC",serif; font-size:24pt; color:var(--fg); margin-bottom:2mm; }
+  .sub { font-size:9pt; color:#4E6A60; margin-bottom:5mm; }
+  .version-label { font-size:10pt; color:var(--fg); margin-bottom:1mm; }
+  .stair-row { display:flex; gap:3mm; padding:2mm 0; border-bottom:.7pt solid var(--border); break-inside:avoid; }
+  .row-label { width:10mm; flex-shrink:0; color:var(--fg); background:var(--bg); text-align:center; padding-top:1mm; font-size:11pt; font-weight:700; }
+  .phrases { flex:1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); column-gap:3mm; row-gap:1mm; }
+  .phrase { font-size:17pt; font-weight:600; white-space:nowrap; min-height:9mm; display:flex; align-items:center; }
+  .blank { display:inline-block; min-width:9mm; height:7mm; border-bottom:1.2pt solid var(--fg); margin:0 1mm; vertical-align:baseline; }
+  .equation { font-family:Arial,"PingFang SC",sans-serif; font-size:15pt; letter-spacing:.2mm; }
+  .equation .blank { min-width:10mm; }
+  .footer { display:flex; justify-content:space-between; font-size:9pt; margin-top:5mm; color:#4E6A60; }
+  .write-line { display:inline-block; width:26mm; height:5mm; border-bottom:.8pt solid var(--fg); }
+</style>
+</head>
+<body>
+<div class="page" data-version="1">
+<p class="version-label">乘法口诀表 / 全表版 · 读熟再贴墙</p><h1>小九九，记在心里</h1><p class="sub">先读熟 → 再挖空填 → 最后默写全对才算过关</p>
+<div class="stair-row"><div class="row-label">× 1</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="1" data-product="1">一一得一</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 2</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="2" data-product="2">一二得二</div>
+<div class="phrase" data-a="2" data-b="2" data-product="4">二二得四</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 3</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="3" data-product="3">一三得三</div>
+<div class="phrase" data-a="2" data-b="3" data-product="6">二三得六</div>
+<div class="phrase" data-a="3" data-b="3" data-product="9">三三得九</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 4</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="4" data-product="4">一四得四</div>
+<div class="phrase" data-a="2" data-b="4" data-product="8">二四得八</div>
+<div class="phrase" data-a="3" data-b="4" data-product="12">三四一十二</div>
+<div class="phrase" data-a="4" data-b="4" data-product="16">四四一十六</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 5</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="5" data-product="5">一五得五</div>
+<div class="phrase" data-a="2" data-b="5" data-product="10">二五一十</div>
+<div class="phrase" data-a="3" data-b="5" data-product="15">三五一十五</div>
+<div class="phrase" data-a="4" data-b="5" data-product="20">四五二十</div>
+<div class="phrase" data-a="5" data-b="5" data-product="25">五五二十五</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 6</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="6" data-product="6">一六得六</div>
+<div class="phrase" data-a="2" data-b="6" data-product="12">二六一十二</div>
+<div class="phrase" data-a="3" data-b="6" data-product="18">三六一十八</div>
+<div class="phrase" data-a="4" data-b="6" data-product="24">四六二十四</div>
+<div class="phrase" data-a="5" data-b="6" data-product="30">五六三十</div>
+<div class="phrase" data-a="6" data-b="6" data-product="36">六六三十六</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 7</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="7" data-product="7">一七得七</div>
+<div class="phrase" data-a="2" data-b="7" data-product="14">二七一十四</div>
+<div class="phrase" data-a="3" data-b="7" data-product="21">三七二十一</div>
+<div class="phrase" data-a="4" data-b="7" data-product="28">四七二十八</div>
+<div class="phrase" data-a="5" data-b="7" data-product="35">五七三十五</div>
+<div class="phrase" data-a="6" data-b="7" data-product="42">六七四十二</div>
+<div class="phrase" data-a="7" data-b="7" data-product="49">七七四十九</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 8</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="8" data-product="8">一八得八</div>
+<div class="phrase" data-a="2" data-b="8" data-product="16">二八一十六</div>
+<div class="phrase" data-a="3" data-b="8" data-product="24">三八二十四</div>
+<div class="phrase" data-a="4" data-b="8" data-product="32">四八三十二</div>
+<div class="phrase" data-a="5" data-b="8" data-product="40">五八四十</div>
+<div class="phrase" data-a="6" data-b="8" data-product="48">六八四十八</div>
+<div class="phrase" data-a="7" data-b="8" data-product="56">七八五十六</div>
+<div class="phrase" data-a="8" data-b="8" data-product="64">八八六十四</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 9</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="9" data-product="9">一九得九</div>
+<div class="phrase" data-a="2" data-b="9" data-product="18">二九一十八</div>
+<div class="phrase" data-a="3" data-b="9" data-product="27">三九二十七</div>
+<div class="phrase" data-a="4" data-b="9" data-product="36">四九三十六</div>
+<div class="phrase" data-a="5" data-b="9" data-product="45">五九四十五</div>
+<div class="phrase" data-a="6" data-b="9" data-product="54">六九五十四</div>
+<div class="phrase" data-a="7" data-b="9" data-product="63">七九六十三</div>
+<div class="phrase" data-a="8" data-b="9" data-product="72">八九七十二</div>
+<div class="phrase" data-a="9" data-b="9" data-product="81">九九八十一</div>
+</div></div>
+<div class="footer"><span>姓名 <span class="write-line"></span>　日期 <span class="write-line"></span></span><span>1 / 3</span></div></div>
+<div class="page" data-version="2">
+<p class="version-label">乘法口诀表 / 挖空版 · 想一想，填完整</p><h1>小九九，记在心里</h1><p class="sub">每三句挖空一句，交替填写乘数或积；读完整句再检查。</p>
+<div class="stair-row"><div class="row-label">× 1</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="1" data-product="1">一一得一</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 2</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="2" data-product="2">一二得二</div>
+<div class="phrase" data-a="2" data-b="2" data-product="4"><span class="blank" aria-label="填写空格"></span>二得四</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 3</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="3" data-product="3">一三得三</div>
+<div class="phrase" data-a="2" data-b="3" data-product="6">二三得六</div>
+<div class="phrase" data-a="3" data-b="3" data-product="9">三三得<span class="blank" aria-label="填写空格"></span></div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 4</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="4" data-product="4">一四得四</div>
+<div class="phrase" data-a="2" data-b="4" data-product="8">二四得八</div>
+<div class="phrase" data-a="3" data-b="4" data-product="12"><span class="blank" aria-label="填写空格"></span>四一十二</div>
+<div class="phrase" data-a="4" data-b="4" data-product="16">四四一十六</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 5</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="5" data-product="5">一五得五</div>
+<div class="phrase" data-a="2" data-b="5" data-product="10">二五<span class="blank" aria-label="填写空格"></span></div>
+<div class="phrase" data-a="3" data-b="5" data-product="15">三五一十五</div>
+<div class="phrase" data-a="4" data-b="5" data-product="20">四五二十</div>
+<div class="phrase" data-a="5" data-b="5" data-product="25"><span class="blank" aria-label="填写空格"></span>五二十五</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 6</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="6" data-product="6">一六得六</div>
+<div class="phrase" data-a="2" data-b="6" data-product="12">二六一十二</div>
+<div class="phrase" data-a="3" data-b="6" data-product="18">三六<span class="blank" aria-label="填写空格"></span></div>
+<div class="phrase" data-a="4" data-b="6" data-product="24">四六二十四</div>
+<div class="phrase" data-a="5" data-b="6" data-product="30">五六三十</div>
+<div class="phrase" data-a="6" data-b="6" data-product="36"><span class="blank" aria-label="填写空格"></span>六三十六</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 7</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="7" data-product="7">一七得七</div>
+<div class="phrase" data-a="2" data-b="7" data-product="14">二七一十四</div>
+<div class="phrase" data-a="3" data-b="7" data-product="21">三七<span class="blank" aria-label="填写空格"></span></div>
+<div class="phrase" data-a="4" data-b="7" data-product="28">四七二十八</div>
+<div class="phrase" data-a="5" data-b="7" data-product="35">五七三十五</div>
+<div class="phrase" data-a="6" data-b="7" data-product="42"><span class="blank" aria-label="填写空格"></span>七四十二</div>
+<div class="phrase" data-a="7" data-b="7" data-product="49">七七四十九</div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 8</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="8" data-product="8">一八得八</div>
+<div class="phrase" data-a="2" data-b="8" data-product="16">二八<span class="blank" aria-label="填写空格"></span></div>
+<div class="phrase" data-a="3" data-b="8" data-product="24">三八二十四</div>
+<div class="phrase" data-a="4" data-b="8" data-product="32">四八三十二</div>
+<div class="phrase" data-a="5" data-b="8" data-product="40"><span class="blank" aria-label="填写空格"></span>八四十</div>
+<div class="phrase" data-a="6" data-b="8" data-product="48">六八四十八</div>
+<div class="phrase" data-a="7" data-b="8" data-product="56">七八五十六</div>
+<div class="phrase" data-a="8" data-b="8" data-product="64">八八<span class="blank" aria-label="填写空格"></span></div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 9</div><div class="phrases">
+<div class="phrase" data-a="1" data-b="9" data-product="9">一九得九</div>
+<div class="phrase" data-a="2" data-b="9" data-product="18">二九一十八</div>
+<div class="phrase" data-a="3" data-b="9" data-product="27"><span class="blank" aria-label="填写空格"></span>九二十七</div>
+<div class="phrase" data-a="4" data-b="9" data-product="36">四九三十六</div>
+<div class="phrase" data-a="5" data-b="9" data-product="45">五九四十五</div>
+<div class="phrase" data-a="6" data-b="9" data-product="54">六九<span class="blank" aria-label="填写空格"></span></div>
+<div class="phrase" data-a="7" data-b="9" data-product="63">七九六十三</div>
+<div class="phrase" data-a="8" data-b="9" data-product="72">八九七十二</div>
+<div class="phrase" data-a="9" data-b="9" data-product="81"><span class="blank" aria-label="填写空格"></span>九八十一</div>
+</div></div>
+<div class="footer"><span>姓名 <span class="write-line"></span>　日期 <span class="write-line"></span></span><span>2 / 3</span></div></div>
+<div class="page" data-version="3">
+<p class="version-label">乘法口诀表 / 默写版 · 全对才算过关</p><h1>小九九，记在心里</h1><p class="sub">按顺序写出得数；完成后对照第 1 页检查。</p>
+<div class="stair-row"><div class="row-label">× 1</div><div class="phrases">
+<div class="phrase equation" data-a="1" data-b="1" data-product="1">1 × 1 = <span class="blank" aria-label="填写得数"></span></div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 2</div><div class="phrases">
+<div class="phrase equation" data-a="1" data-b="2" data-product="2">1 × 2 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="2" data-b="2" data-product="4">2 × 2 = <span class="blank" aria-label="填写得数"></span></div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 3</div><div class="phrases">
+<div class="phrase equation" data-a="1" data-b="3" data-product="3">1 × 3 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="2" data-b="3" data-product="6">2 × 3 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="3" data-b="3" data-product="9">3 × 3 = <span class="blank" aria-label="填写得数"></span></div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 4</div><div class="phrases">
+<div class="phrase equation" data-a="1" data-b="4" data-product="4">1 × 4 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="2" data-b="4" data-product="8">2 × 4 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="3" data-b="4" data-product="12">3 × 4 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="4" data-b="4" data-product="16">4 × 4 = <span class="blank" aria-label="填写得数"></span></div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 5</div><div class="phrases">
+<div class="phrase equation" data-a="1" data-b="5" data-product="5">1 × 5 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="2" data-b="5" data-product="10">2 × 5 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="3" data-b="5" data-product="15">3 × 5 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="4" data-b="5" data-product="20">4 × 5 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="5" data-b="5" data-product="25">5 × 5 = <span class="blank" aria-label="填写得数"></span></div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 6</div><div class="phrases">
+<div class="phrase equation" data-a="1" data-b="6" data-product="6">1 × 6 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="2" data-b="6" data-product="12">2 × 6 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="3" data-b="6" data-product="18">3 × 6 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="4" data-b="6" data-product="24">4 × 6 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="5" data-b="6" data-product="30">5 × 6 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="6" data-b="6" data-product="36">6 × 6 = <span class="blank" aria-label="填写得数"></span></div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 7</div><div class="phrases">
+<div class="phrase equation" data-a="1" data-b="7" data-product="7">1 × 7 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="2" data-b="7" data-product="14">2 × 7 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="3" data-b="7" data-product="21">3 × 7 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="4" data-b="7" data-product="28">4 × 7 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="5" data-b="7" data-product="35">5 × 7 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="6" data-b="7" data-product="42">6 × 7 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="7" data-b="7" data-product="49">7 × 7 = <span class="blank" aria-label="填写得数"></span></div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 8</div><div class="phrases">
+<div class="phrase equation" data-a="1" data-b="8" data-product="8">1 × 8 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="2" data-b="8" data-product="16">2 × 8 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="3" data-b="8" data-product="24">3 × 8 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="4" data-b="8" data-product="32">4 × 8 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="5" data-b="8" data-product="40">5 × 8 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="6" data-b="8" data-product="48">6 × 8 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="7" data-b="8" data-product="56">7 × 8 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="8" data-b="8" data-product="64">8 × 8 = <span class="blank" aria-label="填写得数"></span></div>
+</div></div>
+<div class="stair-row"><div class="row-label">× 9</div><div class="phrases">
+<div class="phrase equation" data-a="1" data-b="9" data-product="9">1 × 9 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="2" data-b="9" data-product="18">2 × 9 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="3" data-b="9" data-product="27">3 × 9 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="4" data-b="9" data-product="36">4 × 9 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="5" data-b="9" data-product="45">5 × 9 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="6" data-b="9" data-product="54">6 × 9 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="7" data-b="9" data-product="63">7 × 9 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="8" data-b="9" data-product="72">8 × 9 = <span class="blank" aria-label="填写得数"></span></div>
+<div class="phrase equation" data-a="9" data-b="9" data-product="81">9 × 9 = <span class="blank" aria-label="填写得数"></span></div>
+</div></div>
+<div class="footer"><span>姓名 <span class="write-line"></span>　日期 <span class="write-line"></span></span><span>3 / 3</span></div></div>
+</body>
+</html>
