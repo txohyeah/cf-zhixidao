@@ -9,12 +9,12 @@
 - P2 预留：`kid` 角色账号（学生自己打卡）
 
 ## 结构
-- `schema.sql` — 9 表（students/users/levels/checkin/papers/sessions/login_throttle + P1: wrong_questions/weak_points，D1=zhixidao-db）
-- `worker_src/_worker.js` → `dist/_worker.js` — 全站门禁 + API（login/logout/me/me-password/overview/checkin/papers）
+- `schema.sql` — 全量初始化形态（v11 起： students/users/levels/checkin/papers/sessions/login_throttle + wrong_questions/weak_points(P1) + math 四表(v10) + knowledge_nodes/questions/paper_items(v11)，D1=zhixidao-db）
+- `worker_src/_worker.js` → `dist/_worker.js` — 全站门禁 + API（login/logout/me/me-password/overview/checkin/papers + v10 math 全套 + **v11 kb：/api/kb/nodes、/api/kb/questions、/api/papers/:id/items、/api/assess**）
 - `dist/` — index.html（总览：14天点阵+连胜+13关卡+**错题弱项榜**+考卷摘要最近3张+口算摘要+用法说明）、papers.html（**考卷库**：增删改查+分页，P1.5）、cards.html（过关卡纸卡，打印/存PDF，门禁内）、cards-math.html（**口算口诀卡 v10.1**：十几减几36式+凑十加法26式+家长页；源文件在 workspace `media/`，`scripts/build_cards.py` 参数化多卡构建）、math.html（**口算记录 v10**）、login.html、favicon
 - `scripts/cf_d1.py` — D1 桥接（create-bound/exec/query/info）
 - `scripts/seed_users.py` — 生成用户种子（读 .secrets，输出仅含哈希；**重跑会使所有会话失效**）
-- `scripts/sync_cuoti.py` — P1 错题同步：`~/.cuoti/cuoti.db`（只读）→ D1 副本全量替换；只迁 `STUDENT_MAP` 映射表内的错题，不带姓名/学校，测试学生数据不迁
+- `scripts/sync_cuoti.py` — **已于 v11 退役（文件保留备查）**：错题真源已迁 D1（agent 拍照识别直写），本地 `~/.cuoti/cuoti.db` 转只读历史归档；weak_points 表同步退役（总览弱项榜改 worker 实时聚合 kp_names）
 - `scripts/verify_live.py` — 线上功能自检（qwenpaw 账号；带浏览器 UA 否则 CF 403；结尾自动补注验证会话）。P1.5 起含考卷库 8 项断言（页可达/新建含科目学期/列表字段/分页/编辑/删除）
 - `scripts/seed_verify_session.py` — 注入 pw.py 部署核对用的验证会话（改密码测试会杀同账号其他会话，失效就重跑本脚本）
 - `data/seed_users.sql`、`data/seed_data.sql` — 种子（用户/13关/首篇考卷分析）；`data/migrate_papers_v9.sql` — P1.5 papers 加 subject/term 迁移（已执行，勿重跑）
@@ -23,7 +23,7 @@
 ```bash
 python3 scripts/cf_d1.py info                                  # 库与绑定状态
 python3 scripts/cf_d1.py exec <file.sql>                       # 执行 SQL
-python3 scripts/sync_cuoti.py                                  # 错题库 → D1 副本（可加 --dry-run）
+# sync_cuoti.py 已退役（v11 错题真源迁 D1），勿再跑
 python3 scripts/seed_users.py && python3 scripts/cf_d1.py exec data/seed_users.sql  # 重置密码（会踢所有会话）
 python3 scripts/seed_verify_session.py                         # 修复 pw.py 核对 cookie
 python3 scripts/verify_live.py                                 # 功能自检（结尾自动补注验证会话）
@@ -38,8 +38,9 @@ python3 tools/publish-web/pw.py deploy --name zhixidao --dir projects/zhixidao/d
 
 ## 路线
 - P0（已上线）：总览 + 打卡 + 考卷时间线 + 改密码
-- P1（已上线）：cuoti 错题弱项——本地 `~/.cuoti/cuoti.db` 仍是错题工作库（入库/组卷/analytics），D1 只存展示副本（wrong_questions + weak_points），`sync_cuoti.py` 单向同步；顽固错题=近30天错≥3次打 🔥；cuoti skill 已迁入本方 `skills/cuoti` 并注册（CuoTiAgent 可退役）
+- P1（已上线 → v11 演进）：cuoti 错题弱项——**v11 起错题真源=D1**（写入=agent 拍照识别直写），本地 `~/.cuoti/cuoti.db` 只读归档，`sync_cuoti.py` 退役；顽固错题=近30天错≥3次打 🔥；weak_points 表退役（弱项榜=worker 实时聚合 kp_names）
 - P1.5（已上线 2026-09-24）：考卷库 papers.html——增删改查 + 分页（20/页），papers 表加 subject/term（科目语文/数学/英语 + 学期）；总览考卷区改「最近 3 张摘要 + 全部考卷入口」；功能模块规划见 `功能模块规划.md`
 - v10（已上线 2026-10-19）：**口算记录 math.html**——小虾站（u4-xuexi.xiaoxia.io）106 场（2026-09-10~10-19）全量迁入，此后 zhixidao 是口算唯一记录入口、小虾站停写。数据表 math_topics/math_sessions/math_wrong_items/math_marks（都在 schema.sql，迁移 SQL `data/math_schema_v10.sql`，导入脚本 `scripts/import_math_from_xiaoxia.py` 含对账断言：106 场/2398 题/2351 对/19673s）。页面功能：统计卡（最近一次/累计/正确率/最快纪录）+ 14 天点阵与口算连胜（有场次=亮粉，"在校完成无数据"=橙标记）+ 题型筛选联动 + 趋势三图（秒每题/正确率/题量，单次+近5+近30均值，SVG 零依赖）+ 题型对照表 + 全部记录（错题明细/备注全保留，30 条/页加载更早）+ 补录/编辑/删除（错题明细多行录入）。总览右栏新增🧮口算摘要行。API：GET /api/math/all（全量下发前端聚合）+ sessions/marks CRUD（仅家长）。verify_live 含口算 14 项断言（--math-only 可单跑口算段）。坑：D1 外键强制——删场次必须先删 math_wrong_items 子表（worker 已修）；auth 表已叫 sessions，口算场次用 math_sessions。后续记录方式：跟 agent 说一句（"玥玥今天第2场 5分30秒 21/22 错 64-46=28 应18"）或 math.html「＋补录一场」表单。
+- v11（2026-10-27 上线 API，一期推进中）：**知识体系**——方案 `知识体系扩展方案-v11.md`（轻站点 agent 中枢 / 单树多视图 / 真源收敛 / 打卡去按钮 / 口算零伤 五决策）。D1 新表 knowledge_nodes（学科→册→章→知识点，grade/is_zhongkao 冗余列+tags 软删除）/ questions（例题主挂 node_id+tags 次挂）/ paper_items（考卷逐题 UNIQUE 幂等）；wrong_questions 加 node_id+tags。API：/api/kb/nodes（GET/POST/PUT 软删除无 DELETE）、/api/kb/questions（同）、/api/papers/:id/items（批量 UPSERT）、/api/assess（三色灯：红=累计错≥3且近30天仍错/黄=有错/绿=近期无错/灰=没练，递归 CTE 祖先聚合）。总览弱项榜切实时聚合。开发=codex 执笔+审核 fixes 2 处（questions tags 字段、apiPaperDelete 外键联动）；本地 sqlite3 冒烟 5 项+线上真测 24 项（首轮 22/24+复测 10/10）全过。待办：建树（数学/语文二上起步）、存量错题 31 题补挂、verify_live 扩展、前端重构（学习手账风+kb.html）
 - P2：kid 账号、生字本爬取、周报推送
 - P3 备忘（条件触发才做）：错题 >300 条拆独立页；跨学期/科目筛选（字段已就位）；多 kid
