@@ -360,6 +360,10 @@ async function apiPaperUpdate(request, env, u, id) {
 async function apiPaperDelete(request, env, u, id) {
   if (u.role !== 'parent') return json({ error: '仅家长可删除' }, 403);
   const sid = await getStudentId(env);
+  // 先删逐题子表再删考卷主表，避免 D1 外键约束阻止删除。
+  await env.DB.prepare(
+    `DELETE FROM paper_items WHERE paper_id IN
+     (SELECT id FROM papers WHERE id = ? AND student_id = ?)`).bind(id, sid).run();
   const r = await env.DB.prepare(
     `DELETE FROM papers WHERE id = ? AND student_id = ?`).bind(id, sid).run();
   if (!r.meta.changes) return json({ error: '考卷不存在' }, 404);
@@ -561,7 +565,7 @@ async function apiKbWrite(request, env, u, kind, id) {
   }
   const fields = nodes
     ? ['name', 'grade', 'level', 'is_zhongkao', 'tags', 'sort', 'note', 'status']
-    : ['node_id', 'qtype', 'difficulty', 'stem', 'answer', 'analysis', 'image_ref', 'source', 'note', 'status'];
+    : ['node_id', 'qtype', 'difficulty', 'stem', 'answer', 'analysis', 'image_ref', 'source', 'tags', 'note', 'status'];
   const ops = [];
   for (const row of rows) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) return json({ error: '记录需为对象' }, 400);
