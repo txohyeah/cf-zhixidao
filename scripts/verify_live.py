@@ -79,14 +79,21 @@ s, d = call('GET', '/api/me')
 fails += not check('me', s == 200 and d.get('authed') and d.get('username') == 'qwenpaw')
 
 if not MATH_ONLY:
+    # papers 真数据计数动态对账（overview 考卷摘要=LIMIT 3；基线曾写死 1，用户录新卷即过期——2026-10-27 改动态）
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from cf_d1 import find_db, execute_sql as _esql
+    _db = find_db()
+    papers_n = _esql(_db, "SELECT COUNT(*) n FROM papers WHERE student_id="
+                          "(SELECT id FROM students WHERE code='yueyue' AND active=1)")[1][0]['n']
     s, d = call('GET', '/api/overview')
     lv = d.get('levels', [])
     wq = d.get('wrong_questions', [])
     wps = d.get('weak_points', [])
-    fails += not check('overview(13关+1考卷+错题副本)',
-                       s == 200 and len(lv) == 13 and len(d.get('papers', [])) == 1 and len(wq) >= 30 and len(wps) >= 3,
-                       'levels=%d papers=%d wq=%d weak=%d streak=%s'
-                       % (len(lv), len(d.get('papers', [])), len(wq), len(wps), d.get('streak')))
+    fails += not check('overview(13关+%d考卷摘要+错题副本)' % min(papers_n, 3),
+                       s == 200 and len(lv) == 13 and len(d.get('papers', [])) == min(papers_n, 3)
+                       and len(wq) >= 30 and len(wps) >= 3,
+                       'levels=%d papers=%d(真值%s) wq=%d weak=%d streak=%s'
+                       % (len(lv), len(d.get('papers', [])), papers_n, len(wq), len(wps), d.get('streak')))
 
     if lv:
         target = sorted(lv, key=lambda x: x['sort'])[0]
@@ -294,6 +301,76 @@ s, d = fetch_text_retry('/math.html')
 fails += not check('口算页(门禁内)', s == 200 and '补录一场' in d and '题型对照' in d)
 code = status_no_redirect('/math.html')
 fails += not check('口算页未登录 302', code == 302, 'code=%s' % code)
+
+if not MATH_ONLY:
+    # ---- v11 知识体系（kb）----
+    def kb_truth():
+        """D1 直查知识树/错题挂载基线（动态对账——建树/补挂/录错题后无需改本脚本）。"""
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from cf_d1 import find_db, execute_sql
+        db = find_db()
+        assert db, 'D1 zhixidao-db 不可达（kb 对账基线取不到）'
+        q = lambda s: execute_sql(db, s)[1]
+        m = q("SELECT COUNT(*) n FROM knowledge_nodes WHERE status='active' AND subject='math'")[0]['n']
+        c = q("SELECT COUNT(*) n FROM knowledge_nodes WHERE status='active' AND subject='chinese'")[0]['n']
+        hang = q("SELECT COUNT(*) n FROM wrong_questions w JOIN knowledge_nodes n ON n.id=w.node_id "
+                 "WHERE w.is_archived=0 AND n.status='active'")[0]['n']
+        total = q("SELECT COUNT(*) n FROM wrong_questions WHERE is_archived=0")[0]['n']
+        recite = q("SELECT COUNT(*) n FROM wrong_questions w JOIN knowledge_nodes n ON n.id=w.node_id "
+                   "WHERE w.is_archived=0 AND n.name='背诵积累'")[0]['n']
+        return m, c, hang, total, recite
+
+    KB = kb_truth()   # (数学节点, 语文节点, 挂载错题, 错题总数, 背诵积累挂载数)
+
+    s, d = call('GET', '/api/kb/nodes?subject=math&limit=500')
+    fails += not check('kb-树真数据-数学(%d节点,对账D1)' % KB[0],
+                       s == 200 and len(d.get('nodes', [])) == KB[0], 'api=%s' % len(d.get('nodes', [])))
+    s, d = call('GET', '/api/kb/nodes?subject=chinese&limit=500')
+    fails += not check('kb-树真数据-语文(%d节点,对账D1)' % KB[1],
+                       s == 200 and len(d.get('nodes', [])) == KB[1], 'api=%s' % len(d.get('nodes', [])))
+
+    s, d = call('GET', '/api/overview')
+    wq = d.get('wrong_questions', [])
+    hang_api = sum(1 for w in wq if w.get('node_id'))
+    fails += not check('kb-错题挂载(overview带node_id %d/%d,对账D1)' % (hang_api, KB[3]),
+                       s == 200 and hang_api == KB[2] == KB[3], 'api挂载=%s D1挂载=%s' % (hang_api, KB[2]))
+    fails += not check('kb-弱项榜(实时聚合有数据)',
+                       isinstance(d.get('weak_points'), list) and len(d['weak_points']) >= 1,
+                       'n=%s' % len(d.get('weak_points', [])))
+
+    s, d = call('GET', '/api/assess?limit=500')
+    rows = d.get('nodes', [])
+    lamps_ok = all(r.get('lamp') in (-1, 0, 1, 2) for r in rows)
+    recite = next((r for r in rows if r['name'] == '背诵积累'), None)
+    cond_recite = (recite is not None and recite['lamp'] != -1) if KB[4] > 0 else True
+    fails += not check('kb-assess(灯值域+覆盖, %d节点)' % len(rows),
+                       s == 200 and len(rows) >= KB[0] + KB[1] and lamps_ok and cond_recite,
+                       '背诵积累lamp=%s' % (recite or {}).get('lamp'))
+
+    # 测试节点全链（用后 retire 清理，无物理删除）
+    s, d = call('POST', '/api/kb/nodes', {'name': 'TEST-verify-kb', 'level': 1, 'subject': 'math', 'sort': 9999})
+    tn = (d.get('ids') or [None])[0]
+    fails += not check('kb-建测试节点', s == 200 and tn, 'st=%s' % s)
+    s, d = call('GET', '/api/kb/nodes?parent_id=null&subject=math&limit=500')
+    fails += not check('kb-测试节点懒加载可见', s == 200 and any(n['id'] == tn for n in d.get('nodes', [])))
+    s, d = call('POST', '/api/kb/questions', {'node_id': tn, 'stem': 'verify', 'tags': 'bad'})
+    fails += not check('kb-questions tags非数组400(审核fix1回归)', s == 400, 'st=%s' % s)
+    s, d = call('DELETE', '/api/kb/nodes/%d' % tn)
+    fails += not check('kb-无DELETE端点(软删除契约)', s == 404, 'st=%s' % s)
+
+    # 考卷逐题外键联动删除回归（审核fix2）：带逐题的考卷必须能删掉
+    s, d = call('POST', '/api/papers', {'title': 'TEST-verify-kb卷', 'subject': 'math', 'term': 'verify'})
+    s, d = call('GET', '/api/papers?limit=50')
+    pid = next((p['id'] for p in d.get('papers', []) if p['title'] == 'TEST-verify-kb卷'), None)
+    s1, _ = call('POST', '/api/papers/%s/items' % pid, [{'qno': '1', 'correct': 1}])
+    s2, _ = call('DELETE', '/api/papers/%s' % pid)
+    fails += not check('kb-考卷删除外键联动(审核fix2回归)', s1 == 200 and s2 == 200, 'items=%s del=%s' % (s1, s2))
+
+    s, d = call('PUT', '/api/kb/nodes/%d' % tn, {'status': 'retired'})
+    s, d = call('GET', '/api/kb/nodes?subject=math&limit=500')
+    fails += not check('kb-retire后active不可见+测试清理', s == 200 and not any(n['id'] == tn for n in d.get('nodes', [])))
+
+
 
 print('\n结果: %s（失败 %d 项）' % ('全部通过' if fails == 0 else '存在失败', fails))
 
