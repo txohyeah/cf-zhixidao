@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智习岛 · 知识树</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:"PingFang SC","Microsoft YaHei",sans-serif; padding-bottom:60px; }
+.top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:auto; flex-wrap:wrap; }
+main { max-width:1120px; margin:auto; padding:26px 20px; }
+
+  /* v11 学习手账：纸面、钢笔与索引贴；状态色仅供评估使用。 */
+  :root {
+    --paper:#FBFBF8; --grid-line:#D9E6EC; --ink-blue:#34558B; --highlight:#FFE066; --ink:#2A2B28;
+    --lamp-red:#D9534F; --lamp-yellow:#E8B93E; --lamp-green:#5CA05C; --lamp-gray:#B9BDB6;
+    --muted:#626A70; --line:rgba(52,85,139,.18); --wash:rgba(52,85,139,.06);
+    --hand:KaiTi,STKaiti,"Kaiti SC",serif; --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+  }
+  body { color:var(--ink); background-color:var(--paper);
+    background-image:linear-gradient(rgba(217,230,236,.38) 1px,transparent 1px),linear-gradient(90deg,rgba(217,230,236,.38) 1px,transparent 1px);
+    background-size:24px 24px; line-height:1.6; }
+  header { background:var(--paper); color:var(--ink); border-bottom:1px solid var(--line); padding:26px 24px 0; }
+  .top { max-width:1080px; }
+  .brand,.logo { font-family:var(--hand); font-size:28px; color:var(--ink-blue); letter-spacing:1px; }
+  .brand small { font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:var(--muted); font-size:12px; letter-spacing:0; }
+  h1,h2,h3,.card .name,.paper .pt,.rec .pt { font-family:var(--hand); color:var(--ink); }
+  h2,.bar h2 { font-size:20px; color:var(--ink); }
+  h2 small,h2 span { font-family:"PingFang SC","Microsoft YaHei",sans-serif; }
+  a { color:var(--ink-blue); text-underline-offset:4px; }
+  button,input,select,textarea { font:inherit; }
+  button { cursor:pointer; }
+  button:disabled { cursor:wait; opacity:.65; }
+  :focus-visible { outline:2px solid var(--ink-blue); outline-offset:4px; }
+  .top .acts button { color:var(--ink-blue); background:transparent; border:1px solid var(--line); border-radius:4px; }
+  .journal-nav { display:flex; gap:8px; max-width:1080px; margin:26px auto 0; padding-top:5px; }
+  .journal-nav a { display:block; min-width:90px; padding:9px 18px 7px; text-align:center; text-decoration:none;
+    font-family:var(--hand); font-size:18px; color:var(--ink-blue); background:var(--wash);
+    border:1px solid var(--line); border-bottom:0; border-radius:7px 7px 0 0; }
+  .journal-nav a:hover { background:rgba(52,85,139,.12); }
+  .journal-nav a[aria-current="page"] { color:var(--paper); background:var(--ink-blue); padding-inline:25px; transform:translateY(-4px); margin-bottom:-4px; }
+  main { padding-top:26px; }
+  .box,.card,.paper,.rec,.stat,.modal,details.wq,details.paper { background:var(--paper); border:1px solid var(--line); border-radius:6px; box-shadow:2px 3px 0 rgba(52,85,139,.04); }
+  .box { padding:20px; }
+  .box > h2 { padding-bottom:10px; border-bottom:1px solid var(--line); margin-bottom:14px; }
+  .box .card,.box details.wq,.box details.paper,.box .kp { border-color:var(--line); }
+  .empty,.hint,.cnt,.pd,.detail,.stat .k,.stat .s,.rec .note { color:var(--muted); }
+  .stat .v,.streak-band .num,.cnt,.pd,.card .stat b,.map-counts { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  .streak-band { max-width:1080px; margin:16px auto 0; color:var(--ink-blue); }
+  .streak-band .lbl { color:var(--muted); }
+  .btn-new,.btn-pass,.chip.on { background:var(--ink-blue); color:var(--paper); border-color:var(--ink-blue); }
+  .op-edit,.op-del,.more button,.addrow,.mk button,.chip,.tag,.kind,.badge,.subj { background:var(--wash); color:var(--ink-blue); border-color:var(--line); border-radius:4px; }
+  .t-subj,.t-term,.t-topic,.t-est,.t-src,.b-learn,.b-master,.b-new { background:var(--wash); color:var(--ink-blue); }
+  .card .kind { background:var(--wash); color:var(--ink-blue); }
+  .card.done { box-shadow:inset 3px 0 var(--ink-blue); border-color:var(--ink-blue); }
+  .card .stat b,.kp b,table.cmp td b,.paper .pa b,.paper-body b { color:var(--ink-blue); }
+  .dot { background:rgba(52,85,139,.12); border-radius:3px; }
+  .dot.full { background:var(--ink-blue); }
+  .dot.part { background:rgba(52,85,139,.4); }
+  .howto,.box .howto,.kp { background:var(--wash); color:var(--muted); }
+  .howto a,.wq-more a { color:var(--ink-blue); }
+  .modal input,.modal select,.modal textarea,input,select,textarea { border-color:var(--line); background:var(--paper); color:var(--ink); border-radius:4px; }
+  .msg.err { color:var(--ink); text-decoration:underline wavy var(--ink-blue); text-underline-offset:4px; }
+  .msg.ok { color:var(--ink-blue); }
+  .marker { color:var(--ink); padding:0 2px; background-repeat:no-repeat; background-size:100% 100%; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+  .lamp-2 { background-image:linear-gradient(transparent 48%,rgba(217,83,79,.25) 48%,rgba(217,83,79,.25) 91%,transparent 91%); }
+  .lamp-1 { background-image:linear-gradient(transparent 48%,rgba(232,185,62,.32) 48%,rgba(232,185,62,.32) 91%,transparent 91%); }
+  .lamp-0 { background-image:linear-gradient(transparent 48%,rgba(92,160,92,.25) 48%,rgba(92,160,92,.25) 91%,transparent 91%); }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  [hidden] { display:none !important; }
+  @media(max-width:600px) {
+    header { padding:18px 16px 0; } .brand small { display:block; margin-left:0; }
+    .journal-nav { gap:5px; margin-top:20px; } .journal-nav a { min-width:0; flex:1; padding:9px 8px 7px; font-size:17px; }
+    .journal-nav a[aria-current="page"] { padding-inline:12px; }
+    .box { padding:16px; } main { padding:18px 12px; }
+  }
+
+.kb-heading { display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin:0 0 20px; flex-wrap:wrap; }
+.kb-heading h1 { font-size:30px; font-weight:500; }
+.kb-heading h1 span { background:linear-gradient(transparent 58%,var(--highlight) 58%,var(--highlight) 90%,transparent 90%); }
+.legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--muted); }
+.kb-layout { display:grid; grid-template-columns:minmax(0,38fr) minmax(0,62fr); gap:24px; align-items:start; }
+.kb-layout > * { min-width:0; }
+.tree-panel { padding:0; overflow:hidden; }
+.tree-tools { padding:20px; border-bottom:1px solid var(--line); }
+.subjects { display:flex; gap:20px; margin-bottom:18px; }
+.subjects button { font-family:var(--hand); font-size:22px; padding:0 2px 4px; color:var(--muted); border:0; background:transparent; }
+.subjects button[aria-pressed="true"] { color:var(--ink-blue); border-bottom:2px solid var(--ink-blue); }
+.views { display:flex; gap:6px; flex-wrap:wrap; }
+.views button { border:1px solid var(--line); padding:5px 10px; background:var(--paper); color:var(--ink-blue); border-radius:4px; font-size:13px; }
+.views button[aria-pressed="true"] { background:var(--ink-blue); color:var(--paper); }
+.grade-field { display:block; margin-top:14px; font-size:13px; color:var(--muted); }
+.grade-field select { margin-left:8px; padding:5px 8px; border:1px solid var(--line); max-width:180px; }
+.tree-content { padding:16px 12px; min-height:300px; }
+.tree-list { list-style:none; padding-left:18px; border-left:1px solid var(--line); margin-left:16px; }
+.tree-content > .tree-list { padding-left:0; border:0; margin:0; }
+.node-row { display:flex; gap:4px; align-items:baseline; border-radius:4px; margin:3px 0; }
+.node-row.selected { background:var(--wash); box-shadow:inset 2px 0 var(--ink-blue); }
+.node-row button { background:transparent; border:0; color:var(--ink); padding:7px 4px; }
+.node-row .arrow { width:28px; flex-shrink:0; color:var(--ink-blue); }
+.node-row .arrow:disabled { cursor:default; opacity:.4; }
+.node-row .node-name { text-align:left; flex:1; overflow-wrap:anywhere; font-size:15px; }
+.node-row small { font-family:var(--mono); color:var(--muted); padding-right:8px; font-size:11px; }
+.tree-note { color:var(--muted); font-size:13px; padding:8px 12px; }
+.tree-note button,.text-button { color:var(--ink-blue); border:0; background:transparent; text-decoration:underline; padding:2px 4px; }
+.path { color:var(--muted); font-size:12px; margin-bottom:16px; overflow-wrap:anywhere; }
+.detail-title { font-size:28px; margin-bottom:10px; font-weight:500; }
+.detail-meta { display:flex; gap:10px 20px; flex-wrap:wrap; color:var(--muted); font-size:13px; margin:12px 0 20px; }
+.detail-meta b { font-family:var(--mono); color:var(--ink); }
+.detail-note { white-space:pre-wrap; overflow-wrap:anywhere; font-size:14px; margin:12px 0 20px; }
+.detail-panel { min-height:420px; }
+.detail-panel h3 { border-top:1px solid var(--line); padding-top:18px; font-size:20px; margin-bottom:12px; }
+.question { padding:16px 0; border-bottom:1px solid var(--line); }
+.question .q-label { color:var(--muted); font-size:12px; margin-bottom:8px; }
+.question .q-text { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.8; font-size:14px; }
+.question details { margin-top:12px; font-size:13px; }
+.question summary { color:var(--ink-blue); cursor:pointer; }
+.question .answer { margin-top:10px; }
+.detail-placeholder { padding:48px 12px; color:var(--muted); }
+.detail-placeholder h2 { margin-bottom:12px; }
+@media(max-width:899px) { .kb-layout { grid-template-columns:1fr; } .tree-content { min-height:180px; } .detail-panel { min-height:260px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><div class="brand">智习岛<small>学习手账 · 知识地图</small></div><a href="/cards.html">纸卡 · 打印</a></div>
+  <nav class="journal-nav" aria-label="主导航">
+    <a href="/">总览</a>
+    <a href="/kb.html" aria-current="page">知识树</a>
+    <a href="/papers.html">考卷</a>
+    <a href="/math.html">口算</a>
+  </nav>
+</header>
+<main>
+  <div class="kb-heading"><h1>把知识连成一张<span>地图</span></h1>
+    <div class="legend" aria-label="灯色说明"><span class="marker lamp-2">红 · 需重点复习</span><span class="marker lamp-1">黄 · 有错待练</span><span class="marker lamp-0">绿 · 已有过关记录</span><span>灰 · 暂无记录</span></div>
+  </div>
+  <div class="kb-layout">
+    <section class="box tree-panel" aria-label="知识树浏览">
+      <div class="tree-tools">
+        <div class="subjects" role="group" aria-label="学科"><button type="button" data-subject="math" aria-pressed="true">数学</button><button type="button" data-subject="chinese" aria-pressed="false">语文</button></div>
+        <div class="views" role="group" aria-label="浏览视图"><button type="button" data-view="all" aria-pressed="true">全部</button><button type="button" data-view="grade" aria-pressed="false">按年级</button><button type="button" data-view="zhongkao" aria-pressed="false">中考考点</button></div>
+        <label class="grade-field" id="gradeField" hidden>年级册<select id="gradeSelect" aria-label="年级册"><option value="">请选择年级册</option></select></label>
+      </div>
+      <div id="treeStatus" class="tree-note" role="status" aria-live="polite"></div>
+      <div id="tree" class="tree-content" aria-label="节点列表"></div>
+    </section>
+    <section class="box detail-panel" id="detail" aria-label="知识点详情" aria-live="polite"><div class="detail-placeholder"><h2>从左侧选一个知识点</h2><p>查看层级路径、练习记录与例题。</p></div></section>
+  </div>
+</main>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LAMP = {'2':'红灯 · 需重点复习','1':'黄灯 · 有错待练','0':'绿灯 · 已有过关记录','-1':'灰灯 · 暂无记录'};
+const nodes = new Map(), children = new Map(), expanded = new Set(), loading = new Set(), errors = new Map();
+let subject = 'math', view = 'all', grade = '', roots = [], lamps = new Map(), selected = null;
+let revision = 0, detailRevision = 0, filteredChildren = new Map(), filteredRoots = [], assessmentError = false;
+const childKey = id => subject + ':' + (id ?? 'root');
+async function api(path, params = {}) {
+  const r = await fetch(path + '?' + new URLSearchParams(params));
+  if (r.status === 401) { location.href = '/login'; throw new Error('登录已过期'); }
+  if (!r.ok) throw new Error('加载失败，请重试');
+  const data = await r.json();
+  if (!data.ok) throw new Error(data.error || '加载失败，请重试');
+  return data;
+}
+async function allPages(path, params, field) {
+  let rows = [], offset = 0;
+  for (;;) {
+    const d = await api(path, {...params, limit:500, offset});
+    const page = d[field] || [];
+    rows.push(...page);
+    if (page.length < 500) return rows;
+    offset += 500;
+  }
+}
+function remember(rows) { rows.forEach(n => nodes.set(n.id, n)); return rows; }
+async function getNode(id) {
+  if (nodes.has(id)) return nodes.get(id);
+  const d = await api('/api/kb/nodes', {id});
+  remember(d.nodes || []);
+  if (!nodes.has(id)) throw new Error('节点不存在或已退役');
+  return nodes.get(id);
+}
+async function getChildren(id, currentSubject) {
+  const key = currentSubject + ':' + (id ?? 'root');
+  if (children.has(key)) return children.get(key);
+  const rows = remember(await allPages('/api/kb/nodes', {parent_id:id ?? 'null', subject:currentSubject}, 'nodes'));
+  children.set(key, rows);
+  return rows;
+}
+function lampFor(id) { return lamps.get(id) || {lamp:-1,wrong_count:0,correct_count:0}; }
+function marker(n) {
+  const l = lampFor(n.id).lamp;
+  return `<span class="marker lamp-${l}">${esc(n.name)}</span><span class="sr-only">（${esc(assessmentError?'评估暂不可用':LAMP[l])}）</span>`;
+}
+function renderBranch(rows, seen = new Set()) {
+  return '<ul class="tree-list">' + rows.filter(n => !seen.has(n.id)).map(n => {
+    const key = childKey(n.id), opened = expanded.has(key), busy = loading.has(key);
+    const list = view === 'all' ? children.get(key) : filteredChildren.get(n.id) || [];
+    const leaf = list && !list.length;
+    const nextSeen = new Set(seen); nextSeen.add(n.id);
+    return `<li><div class="node-row ${selected===n.id?'selected':''}">
+      <button type="button" class="arrow" data-expand="${n.id}" aria-label="${opened?'收起':'展开'}${esc(n.name)}" aria-expanded="${opened}" ${leaf?'disabled':''}>${busy?'…':leaf?'·':opened?'▾':'▸'}</button>
+      <button type="button" class="node-name" data-node="${n.id}" ${selected===n.id?'aria-current="true"':''}>${marker(n)}</button>${n.grade?`<small>${esc(n.grade)}</small>`:''}</div>
+      ${opened ? errors.has(key) ? `<p class="tree-note">子节点加载失败 <button type="button" data-expand="${n.id}">重试</button></p>` : list ? list.length ? renderBranch(list,nextSeen) : '' : '<p class="tree-note">正在加载子节点…</p>' : ''}</li>`;
+  }).join('')+'</ul>';
+}
+function renderTree() {
+  const rows = view === 'all' ? roots : filteredRoots;
+  $('tree').innerHTML = rows.length ? renderBranch(rows) : '<p class="tree-note">'+(view==='grade'&&!grade?'请选择年级册':'此范围还没有知识节点')+'</p>';
+}
+async function toggleNode(id) {
+  const key = childKey(id), rev = revision, currentSubject = subject;
+  if (loading.has(key)) return;
+  if (expanded.has(key) && !errors.has(key)) { expanded.delete(key); renderTree(); return; }
+  expanded.add(key); errors.delete(key);
+  if (view === 'all' && !children.has(key)) {
+    loading.add(key); renderTree();
+    try { await getChildren(id,currentSubject); } catch(e) { errors.set(key,e.message); }
+    finally { loading.delete(key); }
+  }
+  if (rev === revision) renderTree();
+}
+async function nodePath(node) {
+  const path = [], seen = new Set();
+  while (node && !seen.has(node.id)) {
+    seen.add(node.id); path.unshift(node);
+    node = node.parent_id == null ? null : await getNode(node.parent_id);
+  }
+  return path;
+}
+async function showNode(id) {
+  selected = id; const token = ++detailRevision;
+  renderTree(); $('detail').innerHTML = '<p class="empty">正在加载节点详情…</p>';
+  try {
+    const node = await getNode(id);
+    const path = await nodePath(node);
+    if (token !== detailRevision) return;
+    const l = lampFor(id);
+    $('detail').innerHTML = `<p class="path">${path.map(n=>esc(n.name)).join(' / ')}</p>
+      <h2 class="detail-title">${marker(node)}</h2>
+      <p class="empty">${esc(assessmentError?'评估暂不可用，请刷新重试':LAMP[l.lamp])}</p>
+      <div class="detail-meta"><span>层级 <b>${node.level}</b></span>${node.grade?`<span>年级册 ${esc(node.grade)}</span>`:''}<span>累计错次 <b>${assessmentError?'—':l.wrong_count}</b></span><span>答对数 <b>${assessmentError?'—':l.correct_count}</b></span></div>
+      ${node.note?`<p class="detail-note">${esc(node.note)}</p>`:''}<h3>例题</h3><div id="questions"><p class="empty">正在加载例题…</p></div>`;
+    await loadQuestions(id,token);
+  } catch(e) {
+    if (token === detailRevision) $('detail').innerHTML = `<p class="empty">${esc(e.message)}</p><button type="button" class="text-button" data-retry-detail="${id}">重新加载</button>`;
+  }
+}
+async function loadQuestions(id,token) {
+  try {
+    const rows = await allPages('/api/kb/questions',{node_id:id},'questions');
+    if (token !== detailRevision) return;
+    const types = {choice:'选择题',fill:'填空题',apply:'应用题',proof:'证明题',solution:'解答题'};
+    $('questions').innerHTML = rows.length ? rows.map((q,i)=>`<article class="question"><p class="q-label">例 ${i+1}${q.qtype?' · '+esc(types[q.qtype]||q.qtype):''}${q.difficulty?' · 难度 '+esc(q.difficulty)+'/5':''}</p><p class="q-text">${esc(q.stem)}</p>
+      ${q.answer||q.analysis?`<details><summary>查看答案与解析</summary>${q.answer?`<p class="q-text answer"><b>答案：</b>${esc(q.answer)}</p>`:''}${q.analysis?`<p class="q-text answer"><b>解析：</b>${esc(q.analysis)}</p>`:''}</details>`:''}</article>`).join('') : '<p class="empty">此知识点还没有例题</p>';
+  } catch(e) {
+    if (token === detailRevision) $('questions').innerHTML = `<p class="empty">例题加载失败</p><button type="button" class="text-button" data-retry-detail="${id}">重试</button>`;
+  }
+}
+async function filteredTree(currentSubject,currentView,currentGrade) {
+  if (currentView === 'grade' && !currentGrade) return {roots:[],children:new Map()};
+  const params = {subject:currentSubject};
+  if (currentView === 'grade') params.grade = currentGrade;
+  if (currentView === 'zhongkao') params.is_zhongkao = 1;
+  let matches = remember(await allPages('/api/kb/nodes',params,'nodes'));
+  // 现有接口尚未处理 is_zhongkao 查询，按返回属性筛选，祖先仅用于保留路径。
+  if (currentView === 'zhongkao') matches = matches.filter(n=>n.is_zhongkao===1);
+  const included = new Map();
+  for (const node of matches) for (const ancestor of await nodePath(node)) included.set(ancestor.id,ancestor);
+  const grouped = new Map(), top = [];
+  for (const node of included.values()) {
+    if (node.parent_id == null || !included.has(node.parent_id)) top.push(node);
+    else { if (!grouped.has(node.parent_id)) grouped.set(node.parent_id,[]); grouped.get(node.parent_id).push(node); }
+  }
+  const sort = rows => rows.sort((a,b)=>a.sort-b.sort||a.id-b.id);
+  sort(top); for (const rows of grouped.values()) sort(rows);
+  return {roots:top,children:grouped};
+}
+async function refresh() {
+  const rev = ++revision, currentSubject = subject, currentView = view, currentGrade = grade;
+  ++detailRevision; selected = null;
+  $('detail').innerHTML = '<div class="detail-placeholder"><h2>从左侧选一个知识点</h2><p>查看层级路径、练习记录与例题。</p></div>';
+  $('tree').innerHTML = '<p class="tree-note">正在加载知识树…</p>';
+  $('treeStatus').textContent = '';
+  document.querySelectorAll('[data-subject]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.subject===subject)));
+  document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view)));
+  $('gradeField').hidden = view !== 'grade';
+  try {
+    // 评估独立失败时仍能浏览节点与例题，明确标示无评估数据。
+    const assessParams = {subject:currentSubject};
+    if (currentView === 'grade' && currentGrade) assessParams.grade = currentGrade;
+    if (currentView === 'zhongkao') assessParams.scope = 'zhongkao';
+    const assessment = allPages('/api/assess',assessParams,'nodes').then(rows=>({rows})).catch(()=>({rows:[],error:true}));
+    const treeJob = currentView === 'all' ? getChildren(null,currentSubject) : filteredTree(currentSubject,currentView,currentGrade);
+    const [treeData, evaluated] = await Promise.all([treeJob,assessment]);
+    if (rev !== revision) return;
+    lamps = new Map(evaluated.rows.map(n=>[n.node_id,n])); assessmentError = !!evaluated.error;
+    if (currentView === 'all') roots = treeData;
+    else { filteredRoots = treeData.roots; filteredChildren = treeData.children; }
+    $('treeStatus').textContent = assessmentError ? '评估暂不可用，节点与例题仍可浏览。' : '展开箭头查看子级，点击名称查看详情。';
+    renderTree();
+  } catch(e) {
+    if (rev !== revision) return;
+    $('treeStatus').textContent = '知识树加载失败';
+    $('tree').innerHTML = `<p class="tree-note">${esc(e.message)} <button type="button" data-retry-tree>重试</button></p>`;
+  }
+}
+async function loadGrades() {
+  const currentSubject = subject;
+  try {
+    const rows = remember(await allPages('/api/kb/nodes',{subject:currentSubject},'nodes'));
+    if (currentSubject !== subject) return;
+    const grades = [...new Set(rows.map(n=>n.grade).filter(Boolean))];
+    $('gradeSelect').innerHTML = '<option value="">请选择年级册</option>'+grades.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+    $('gradeSelect').value = grade;
+  } catch(e) {
+    if (currentSubject === subject) $('gradeSelect').innerHTML = '<option value="">年级加载失败，请重选学科</option>';
+  }
+}
+document.querySelectorAll('[data-subject]').forEach(b=>b.addEventListener('click',()=>{
+  subject=b.dataset.subject; grade=''; refresh(); if(view==='grade')loadGrades();
+}));
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{view=b.dataset.view;refresh();if(view==='grade')loadGrades();}));
+$('gradeSelect').addEventListener('change',()=>{grade=$('gradeSelect').value;refresh();});
+$('tree').addEventListener('click',e=>{
+  const expand=e.target.closest('[data-expand]'), node=e.target.closest('[data-node]');
+  if (expand) toggleNode(Number(expand.dataset.expand));
+  else if (node) showNode(Number(node.dataset.node));
+  else if (e.target.closest('[data-retry-tree]')) refresh();
+});
+$('detail').addEventListener('click',e=>{const b=e.target.closest('[data-retry-detail]');if(b)showNode(Number(b.dataset.retryDetail));});
+// 从总览重点知识点直接进入详情，并展开到该节点。
+async function start() {
+  const id = Number(new URLSearchParams(location.search).get('node_id'));
+  if (Number.isSafeInteger(id) && id > 0) {
+    try {
+      const node = await getNode(id);
+      subject = node.subject === 'chinese' ? 'chinese' : 'math';
+      await refresh();
+      const path = await nodePath(node);
+      for (const ancestor of path.slice(0,-1)) {await getChildren(ancestor.id,subject);expanded.add(childKey(ancestor.id));}
+      await showNode(id);
+    } catch(e) { $('treeStatus').textContent = '指定节点无法加载，请从知识树中选择。'; await refresh(); }
+  } else await refresh();
+}
+start();
+</script>
+</body>
+</html>
