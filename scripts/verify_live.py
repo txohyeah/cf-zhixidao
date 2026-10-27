@@ -370,6 +370,16 @@ if not MATH_ONLY:
     s, d = call('GET', '/api/kb/nodes?subject=math&limit=500')
     fails += not check('kb-retire后active不可见+测试清理', s == 200 and not any(n['id'] == tn for n in d.get('nodes', [])))
 
+    # ---- v11.1 打印中心 ----
+    s, d = fetch_text_retry('/print.html')
+    fails += not check('打印中心页(清单+生成器)',
+                       s == 200 and '打印素材' in d and '乘法口诀表' in d and '口算练习纸生成器' in d)
+    s, d = fetch_text_retry('/cards-koujue99.html')
+    fails += not check('乘法口诀表卡(门禁内+打印按钮)',
+                       s == 200 and '乘法口诀表' in d and 'window.print' in d)
+    code = status_no_redirect('/cards-koujue99.html')
+    fails += not check('口诀表卡未登录 302', code == 302, 'code=%s' % code)
+
 
 
 print('\n结果: %s（失败 %d 项）' % ('全部通过' if fails == 0 else '存在失败', fails))
