@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玥玥 · 田字格练习纸</title>
+<style>
+@page { size:A4; margin:12mm 12mm 14mm; }
+* { box-sizing:border-box; margin:0; padding:0; }
+:root { --paper:#FBFBF8; --grid-line:#D9E6EC; --ink-blue:#34558B; --highlight:#FFE066; --ink:#2A2B28; --hand:KaiTi,STKaiti,"Kaiti SC",serif; --fg:#34558B; --bg:#EFF4F8; --border:#C6D7E5; }
+body { font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:var(--ink); line-height:1.45; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.page { page-break-after:always; } .page:last-child { page-break-after:auto; }
+@media screen { html body { background:var(--bg); } }
+.sheet-head { display:flex; justify-content:space-between; align-items:baseline; border-bottom:1pt solid var(--fg); padding-bottom:3mm; }
+h1,h2 { font-family:var(--hand); color:var(--fg); } h1 { font-size:24pt; } h2 { font-size:17pt; margin-top:5mm; }
+.sub { font-size:9pt; color:#526773; margin:3mm 0 5mm; }
+.meta { font-size:10pt; margin:4mm 0 6mm; } .write-line { display:inline-block; width:30mm; height:5mm; border-bottom:.7pt solid var(--fg); }
+.footer { font-size:9pt; color:var(--fg); margin-top:5mm; }
+.grid-row { display:flex; width:162mm; } .cell { position:relative; display:block; width:13.5mm; height:13.5mm; flex:none; border:.7pt solid var(--fg); }
+.cell::before { content:""; position:absolute; left:50%; top:0; height:100%; border-left:.5pt dashed #8098AC; }
+.cell::after { content:""; position:absolute; top:50%; left:0; width:100%; border-top:.5pt dashed #8098AC; }
+.pinyin-row { margin-bottom:3mm; break-inside:avoid; width:162mm; }
+.pinyin { height:9mm; border-top:.6pt solid var(--fg); border-bottom:.6pt solid var(--fg); position:relative; }
+.pinyin::before,.pinyin::after { content:""; position:absolute; left:0; width:100%; border-top:.5pt solid #8098AC; } .pinyin::before { top:33.333%; } .pinyin::after { top:66.667%; }
+@media screen { .page { overflow-x:auto; } }
+
+  /* ---- 屏幕模式工具条与纸张感（打印时不生效/隐藏） ---- */
+  .toolbar { position:sticky; top:0; z-index:9; display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:#EFF4F8; border-bottom:1pt solid #C6D7E5; padding:10px 16px; font-size:13px; color:#34558B; }
+  .toolbar button { background:#34558B; color:#fff; border:none; border-radius:6px; padding:7px 14px; font-size:13px; cursor:pointer; }
+  .toolbar a { color:#34558B; }
+  .toolbar .tip { color:#8b857a; font-size:12px; }
+  @media screen {
+    body { background:#f3eef0; padding:14px 8px; }
+    .page { background:#fff; max-width:186mm; margin:0 auto 16px; padding:8mm 12mm; box-shadow:0 2px 10px rgba(0,0,0,.12); border-radius:4px; }
+  }
+  @media print { .toolbar { display:none !important; } body { background:#fff; padding:0; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <a href="/">← 返回智习岛</a>
+  <button onclick="window.print()">🖨 打印 / 存为 PDF</button>
+  <span class="tip">打印对话框里选『另存为 PDF』可得电子版 · 页1练汉字，页2拼音与汉字逐行对应练写</span>
+</div>
+<div class="page"><div class="sheet-head"><h1>田字格练习纸</h1><small>1 / 2</small></div><div class="meta">姓名 <span class="write-line"></span>　日期 <span class="write-line"></span></div><p class="sub">纯田字格 · 看准位置，写得端正（每格 13.5 毫米）</p><div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+<div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+<div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+<div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+<div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+<div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+<div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+<div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+<div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+<div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+<p class="footer">一笔一画慢慢写，写完看看结构。</p></div>
+<div class="page"><div class="sheet-head"><h1>田字格练习纸 · 拼音版</h1><small>2 / 2</small></div><div class="meta">姓名 <span class="write-line"></span>　日期 <span class="write-line"></span></div><p class="sub">上面四线格写拼音，正下方田字格写对应汉字。</p><div class="pinyin-row"><div class="pinyin"></div><div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+</div>
+<div class="pinyin-row"><div class="pinyin"></div><div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+</div>
+<div class="pinyin-row"><div class="pinyin"></div><div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+</div>
+<div class="pinyin-row"><div class="pinyin"></div><div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+</div>
+<div class="pinyin-row"><div class="pinyin"></div><div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+</div>
+<div class="pinyin-row"><div class="pinyin"></div><div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+</div>
+<div class="pinyin-row"><div class="pinyin"></div><div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+</div>
+<div class="pinyin-row"><div class="pinyin"></div><div class="grid-row"><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+</div>
+</div>
+</body>
+</html>

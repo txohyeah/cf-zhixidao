@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玥玥 · 查字典练习卡</title>
+<style>
+@page { size:A4; margin:12mm 12mm 14mm; }
+* { box-sizing:border-box; margin:0; padding:0; }
+:root { --paper:#FBFBF8; --grid-line:#D9E6EC; --ink-blue:#34558B; --highlight:#FFE066; --ink:#2A2B28; --hand:KaiTi,STKaiti,"Kaiti SC",serif; --fg:#557467; --bg:#EFF5F0; --border:#C7DCCF; }
+body { font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:var(--ink); line-height:1.45; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.page { page-break-after:always; } .page:last-child { page-break-after:auto; }
+@media screen { html body { background:var(--bg); } }
+.sheet-head { display:flex; justify-content:space-between; align-items:baseline; border-bottom:1pt solid var(--fg); padding-bottom:3mm; }
+h1,h2 { font-family:var(--hand); color:var(--fg); } h1 { font-size:24pt; } h2 { font-size:17pt; margin-top:5mm; }
+.sub { font-size:9pt; color:#526773; margin:3mm 0 5mm; }
+.meta { font-size:10pt; margin:4mm 0 6mm; } .write-line { display:inline-block; width:30mm; height:5mm; border-bottom:.7pt solid var(--fg); }
+.footer { font-size:9pt; color:var(--fg); margin-top:5mm; }
+table { width:100%; table-layout:fixed; border-collapse:collapse; } th,td { border:.8pt solid var(--border); height:12mm; text-align:center; font-size:14pt; } thead th { background:var(--bg); color:var(--fg); font-size:11pt; height:9mm; } tbody th { font-family:var(--hand); font-size:20pt; font-weight:400; } .method { font-size:9pt; margin:2mm 0 3mm; color:#557467; }
+
+  /* ---- 屏幕模式工具条与纸张感（打印时不生效/隐藏） ---- */
+  .toolbar { position:sticky; top:0; z-index:9; display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:#EFF5F0; border-bottom:1pt solid #C7DCCF; padding:10px 16px; font-size:13px; color:#557467; }
+  .toolbar button { background:#557467; color:#fff; border:none; border-radius:6px; padding:7px 14px; font-size:13px; cursor:pointer; }
+  .toolbar a { color:#557467; }
+  .toolbar .tip { color:#8b857a; font-size:12px; }
+  @media screen {
+    body { background:#f3eef0; padding:14px 8px; }
+    .page { background:#fff; max-width:186mm; margin:0 auto 16px; padding:8mm 12mm; box-shadow:0 2px 10px rgba(0,0,0,.12); border-radius:4px; }
+  }
+  @media print { .toolbar { display:none !important; } body { background:#fff; padding:0; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <a href="/">← 返回智习岛</a>
+  <button onclick="window.print()">🖨 打印 / 存为 PDF</button>
+  <span class="tip">打印对话框里选『另存为 PDF』可得电子版 · 先独立查字，再由家长核对答案；页码以你手头的字典为准</span>
+</div>
+<div class="page"><div class="sheet-head"><h1>查字典练习卡</h1><small>1 / 2</small></div><div class="meta">姓名 <span class="write-line"></span>　日期 <span class="write-line"></span></div><p class="sub">带上字典，按步骤查一查；页码以你手头的字典为准。</p><h2>音序查字法</h2><p class="method">大写字母 → 音节 → 页码</p><table><thead><tr><th scope="col">汉字</th><th scope="col">大写字母</th><th scope="col">音节</th><th scope="col">页码</th></tr></thead><tbody><tr><th scope="row">春</th><td></td><td></td><td></td></tr><tr><th scope="row">蝶</th><td></td><td></td><td></td></tr><tr><th scope="row">海</th><td></td><td></td><td></td></tr><tr><th scope="row">林</th><td></td><td></td><td></td></tr><tr><th scope="row">鸟</th><td></td><td></td><td></td></tr><tr><th scope="row">雪</th><td></td><td></td><td></td></tr></tbody></table><h2>部首查字法</h2><p class="method">找部首 → 数去部首笔画 → 页码</p><table><thead><tr><th scope="col">汉字</th><th scope="col">部首</th><th scope="col">再查几画</th><th scope="col">页码</th></tr></thead><tbody><tr><th scope="row">想</th><td></td><td></td><td></td></tr><tr><th scope="row">晴</th><td></td><td></td><td></td></tr><tr><th scope="row">江</th><td></td><td></td><td></td></tr><tr><th scope="row">树</th><td></td><td></td><td></td></tr><tr><th scope="row">草</th><td></td><td></td><td></td></tr><tr><th scope="row">造</th><td></td><td></td><td></td></tr></tbody></table></div>
+<div class="page"><div class="sheet-head"><h1>答案页 · 家长收好</h1><small>2 / 2</small></div><div class="meta">姓名 <span class="write-line"></span>　日期 <span class="write-line"></span></div><p class="sub">查字典练习卡 · 页码因字典版次而异，不提供页码答案。</p><h2>音序查字法</h2><p class="method">大写字母 → 音节 → 页码</p><table><thead><tr><th scope="col">汉字</th><th scope="col">大写字母</th><th scope="col">音节</th><th scope="col">页码</th></tr></thead><tbody><tr><th scope="row">春</th><td>C</td><td>chūn</td><td></td></tr><tr><th scope="row">蝶</th><td>D</td><td>dié</td><td></td></tr><tr><th scope="row">海</th><td>H</td><td>hǎi</td><td></td></tr><tr><th scope="row">林</th><td>L</td><td>lín</td><td></td></tr><tr><th scope="row">鸟</th><td>N</td><td>niǎo</td><td></td></tr><tr><th scope="row">雪</th><td>X</td><td>xuě</td><td></td></tr></tbody></table><h2>部首查字法</h2><p class="method">找部首 → 数去部首笔画 → 页码</p><table><thead><tr><th scope="col">汉字</th><th scope="col">部首</th><th scope="col">再查几画</th><th scope="col">页码</th></tr></thead><tbody><tr><th scope="row">想</th><td>心部</td><td>9</td><td></td></tr><tr><th scope="row">晴</th><td>日部</td><td>8</td><td></td></tr><tr><th scope="row">江</th><td>氵部</td><td>3</td><td></td></tr><tr><th scope="row">树</th><td>木部</td><td>5</td><td></td></tr><tr><th scope="row">草</th><td>艹部</td><td>6</td><td></td></tr><tr><th scope="row">造</th><td>辶部</td><td>7</td><td></td></tr></tbody></table></div>
+
+</body>
+</html>

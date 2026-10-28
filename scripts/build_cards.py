@@ -26,6 +26,14 @@ CARDS = [
          fg='#2F7D6D', bg='#EDF5F2', border='#BFE0D6',
          tip='页1全表贴墙 · 页2挖空自填 · 页3默写全对才算过关',
          marker='乘法口诀表', min_pages=3),
+    dict(src='yueyue_tianzige.html', dst='cards-tianzige.html',
+         fg='#34558B', bg='#EFF4F8', border='#C6D7E5',
+         tip='打印对话框里选『另存为 PDF』可得电子版 · 页1练汉字，页2拼音与汉字逐行对应练写',
+         marker='田字格练习纸', min_pages=2),
+    dict(src='yueyue_zidian.html', dst='cards-zidian.html',
+         fg='#557467', bg='#EFF5F0', border='#C7DCCF',
+         tip='打印对话框里选『另存为 PDF』可得电子版 · 先独立查字，再由家长核对答案；页码以你手头的字典为准',
+         marker='查字典练习卡', min_pages=2),
 ]
 
 CSS_TPL = '''
@@ -141,6 +149,11 @@ PRINT_INDEX = r'''<!DOCTYPE html>
     .answer-space { width:14mm; }
     .sheet-head h2 { font-size:18pt; }
   }
+  .clock-generator { margin-top:24px; }
+  .clock-face { display:block; width:22mm; height:22mm; margin:.5mm auto; }
+  .clock-problem { min-height:33mm; break-inside:avoid; border-bottom:.5pt solid var(--grid-line); padding:1mm 0; font-size:10pt; line-height:1.3; }
+  .clock-problem .answer-space { width:9mm; }
+  .clock-sheet .sheet-grid { row-gap:1mm; }
 </style>
 </head>
 <body>
@@ -170,6 +183,25 @@ PRINT_INDEX = r'''<!DOCTYPE html>
       <div class="options"><label for="count">题数 <select id="count"><option value="20">20 题</option><option value="30">30 题</option><option value="50">50 题</option></select></label><label><input type="checkbox" id="withAnswers" checked>附答案页</label></div>
       <div class="actions"><button type="submit">生成练习纸</button><button class="secondary" type="button" id="printSheet" disabled>🖨 打印练习纸</button></div>
       <p class="message" id="generatorMessage" role="status" aria-live="polite">尚未生成练习纸。</p>
+    </form>
+  </section>
+  <section class="generator screen-only clock-generator" aria-labelledby="clockTitle">
+    <p class="assistant-tip">做完拍照发给助教批改</p>
+    <h2 id="clockTitle">时钟练习纸生成器</h2>
+    <p class="intro">读一读、画一画、算一算；生成后替换当前练习纸。</p>
+    <form id="clockForm">
+      <fieldset><legend>题型 · 可多选</legend>
+        <div class="type-row"><label><input type="checkbox" name="clockType" value="read" checked>读钟面</label></div>
+        <div class="type-row"><label><input type="checkbox" name="clockType" value="draw" checked>画指针</label></div>
+        <div class="type-row"><label><input type="checkbox" name="clockType" value="elapsed" checked>时间推算</label></div>
+      </fieldset>
+      <fieldset><legend>难度 · 单选</legend><div class="sub-options">
+        <label><input type="radio" name="clockLevel" value="half" checked>整点与半点</label>
+        <label><input type="radio" name="clockLevel" value="five">几时几分（5 分钟刻度）</label>
+      </div></fieldset>
+      <div class="options"><label>题数 <select id="clockCount"><option value="6">6 题</option><option value="8" selected>8 题</option><option value="12">12 题</option></select></label><label><input type="checkbox" id="clockAnswers" checked>附答案页</label></div>
+      <div class="actions"><button type="submit">生成时钟练习纸</button><button class="secondary" type="button" id="clockPrint" disabled>🖨 打印练习纸</button></div>
+      <p class="message" id="clockMessage" role="status" aria-live="polite">尚未生成练习纸。</p>
     </form>
   </section>
   <div class="worksheet" id="worksheet" aria-label="生成的口算练习纸"></div>
@@ -270,6 +302,87 @@ generatorForm.addEventListener('submit', e=>{
   }
 });
 printButton.addEventListener('click',()=>{if(!printButton.disabled)window.print();});
+// 时钟题单独枚举有限池；读钟面与画指针共用时刻键，推算共用起点键。
+function selectClockQuestions(pools, count, random = Math.random) {
+  const remaining = shuffle(pools.map(pool=>shuffle(pool.slice(),random)),random);
+  const used = new Set(), result = [];
+  while (result.length < count) {
+    let added = false;
+    for (const pool of remaining) {
+      while (pool.length && used.has(pool[pool.length-1].key)) pool.pop();
+      if (!pool.length) continue;
+      const q = pool.pop(); used.add(q.key); result.push(q); added = true;
+      if (result.length === count) return result;
+    }
+    if (!added) throw new Error(`当前范围只有 ${result.length} 道不重复的时钟题，请增加题型或减少题数。`);
+  }
+  return result;
+}
+function generateClockQuestions(options, random = Math.random) {
+  const valid = ['read','draw','elapsed'];
+  if (!options || !Array.isArray(options.types) || !options.types.length || options.types.some(t=>!valid.includes(t))) throw new Error('请至少勾选一种时钟题型。');
+  if (![6,8,12].includes(options.count)) throw new Error('题数请选择 6、8 或 12。');
+  if (!['half','five'].includes(options.level)) throw new Error('请选择整点与半点或 5 分钟刻度。');
+  const minutes = options.level === 'half' ? [0,30] : Array.from({length:12},(_,i)=>i*5);
+  const deltas = [10,15,20,25,30,45];
+  const pools = [...new Set(options.types)].map(type=>{
+    const pool = [];
+    for (let h=1; h<=12; h++) for (const m of minutes) {
+      // 以半天内的时刻计算，超过 12 时自然回卷，无日期跨天概念。
+      const delta = type === 'elapsed' ? deltas[Math.floor(random()*deltas.length)] : 0;
+      const total = ((h%12)*60+m+delta)%720;
+      pool.push({type,h,m,delta,answerH:Math.floor(total/60)||12,answerM:total%60,key:`${type==='elapsed'?'elapsed':'face'}:${h}:${m}`});
+    }
+    return pool;
+  });
+  return selectClockQuestions(pools,options.count,random);
+}
+function clockSVG(h,m,blank=false) {
+  const ticks = Array.from({length:12},(_,i)=>`<line x1="50" y1="5" x2="50" y2="10" transform="rotate(${i*30} 50 50)"/>`).join('');
+  const hands = blank ? '' : `<line x1="50" y1="50" x2="50" y2="29" stroke-width="4" transform="rotate(${(h%12)*30+m/2} 50 50)"/><line x1="50" y1="50" x2="50" y2="16" stroke-width="2" transform="rotate(${m*6} 50 50)"/>`;
+  return `<svg class="clock-face" viewBox="0 0 100 100" role="img" aria-label="${blank?'请画指针的空钟面':`${h} 时 ${m} 分钟面`}"><circle cx="50" cy="50" r="47" fill="white" stroke="#34558B"/><g stroke="#34558B" stroke-width="1.2">${ticks}</g><g fill="#34558B" font-family="Arial" font-size="13" text-anchor="middle"><text x="50" y="24">12</text><text x="80" y="55">3</text><text x="50" y="86">6</text><text x="20" y="55">9</text></g><g stroke="#2A2B28" stroke-linecap="round">${hands}</g><circle cx="50" cy="50" r="2" fill="#2A2B28"/></svg>`;
+}
+function renderClockWorksheet(questions,withAnswers) {
+  function page(answers) {
+    return `<section class="page clock-sheet"><div class="sheet-head"><h2>${answers?'时钟答案页 · 家长收好':'时钟练习纸'}</h2><small>${questions.length} 题 · ${answers?2:1} / ${withAnswers?2:1}</small></div><div class="sheet-meta">姓名 <span class="write-line"></span> 日期 <span class="write-line"></span></div><div class="sheet-grid">${questions.map((q,i)=>{
+      const time = `${q.h} 时 ${q.m} 分`, result = `${q.answerH} 时 ${q.answerM} 分`;
+      let content;
+      if (q.type === 'elapsed') content = `<p>${time}再过 ${q.delta} 分钟</p><p>是 ${answers?`<span class="sheet-answer">${result}</span>`:'<span class="answer-space"></span> 时 <span class="answer-space"></span> 分'}</p>`;
+      else if (q.type === 'draw') content = `<p>画指针：${time}</p>${clockSVG(q.h,q.m,!answers)}`;
+      else content = `<p>读钟面</p>${clockSVG(q.h,q.m)}<p>${answers?`<span class="sheet-answer">${time}</span>`:'<span class="answer-space"></span> 时 <span class="answer-space"></span> 分'}</p>`;
+      return `<div class="clock-problem"><span class="qno">${i+1}.</span>${content}</div>`;
+    }).join('')}</div><p class="sheet-foot">${answers?'按题号核对；时间推算按 12 小时制，超过 12 时回到 1 时，不区分上午、下午。':'独立完成后检查；做完拍照发给助教批改。'}</p></section>`;
+  }
+  return page(false)+(withAnswers?page(true):'');
+}
+const clockForm = document.getElementById('clockForm');
+const clockPrint = document.getElementById('clockPrint');
+const clockMessage = document.getElementById('clockMessage');
+function clearClockWorksheet() {
+  worksheet.innerHTML = ''; clockPrint.disabled = true;
+  clockMessage.className = 'message'; clockMessage.textContent = '选项已调整，请重新生成练习纸。';
+}
+clockForm.addEventListener('change',clearClockWorksheet);
+clockForm.addEventListener('submit',e=>{
+  e.preventDefault(); clearClockWorksheet();
+  try {
+    const options = {types:[...clockForm.querySelectorAll('input[name="clockType"]:checked')].map(e=>e.value),level:clockForm.querySelector('input[name="clockLevel"]:checked')?.value,count:Number(document.getElementById('clockCount').value)};
+    const questions = generateClockQuestions(options);
+    const withAnswers = document.getElementById('clockAnswers').checked;
+    worksheet.innerHTML = renderClockWorksheet(questions,withAnswers); clockPrint.disabled = false;
+    clockMessage.textContent = `已生成 ${questions.length} 道不重复时钟题${withAnswers?'，附 1 页答案':''}。可先预览，再打印。`;
+  } catch(error) {
+    clockMessage.className = 'message error'; clockMessage.textContent = error.message;
+  }
+});
+clockPrint.addEventListener('click',()=>{if(!clockPrint.disabled && worksheet.children.length)window.print();});
+// 共享容器在提交前清空；原口算监听器与函数保持原文。
+generatorForm.addEventListener('submit',()=>{
+  worksheet.innerHTML = ''; clockPrint.disabled = true;
+},true);
+clockForm.addEventListener('submit',()=>{ printButton.disabled = true; },true);
+clockForm.addEventListener('change',()=>{ printButton.disabled = true; });
+generatorForm.addEventListener('change',()=>{ clockPrint.disabled = true; });
 </script>
 </body>
 </html>
