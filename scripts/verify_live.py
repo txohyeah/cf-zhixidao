@@ -380,6 +380,23 @@ if not MATH_ONLY:
     code = status_no_redirect('/cards-koujue99.html')
     fails += not check('口诀表卡未登录 302', code == 302, 'code=%s' % code)
 
+    # ---- v11.2 打印中心三件（田字格/查字典/时钟生成器） ----
+    s, d = fetch_text_retry('/print.html')
+    fails += not check('v11.2 打印中心清单含两新卡+时钟生成器',
+                       s == 200 and '田字格练习纸' in d and '查字典练习卡' in d and '时钟练习纸生成器' in d)
+    s, d = fetch_text_retry('/cards-tianzige.html')
+    fails += not check('田字格练习纸卡(门禁内+打印按钮)',
+                       s == 200 and '田字格练习纸' in d and 'window.print' in d)
+    code = status_no_redirect('/cards-tianzige.html')
+    fails += not check('田字格卡未登录 302', code == 302, 'code=%s' % code)
+    s, d = fetch_text_retry('/cards-zidian.html')
+    fails += not check('查字典练习卡(门禁内+两查法+打印按钮)',
+                       s == 200 and '查字典练习卡' in d and '音序查字法' in d and '部首查字法' in d and '再查几画' in d and 'window.print' in d)
+    fails += not check('查字典卡页码留空+字典为准注记',
+                       '<td>C</td>' in d and ('页码以你手头的字典为准' in d or '以所用字典为准' in d))
+    code = status_no_redirect('/cards-zidian.html')
+    fails += not check('查字典卡未登录 302', code == 302, 'code=%s' % code)
+
 
 
 print('\n结果: %s（失败 %d 项）' % ('全部通过' if fails == 0 else '存在失败', fails))
