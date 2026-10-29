@@ -16,11 +16,11 @@ if len(sys.argv) == 3 and sys.argv[1] == '--bridge':
     sys.exit(0)
 with tempfile.TemporaryDirectory() as td:
     dbfile = os.path.join(td, 'test.sqlite'); db = sqlite3.connect(dbfile); db.execute('PRAGMA foreign_keys=ON')
-    db.executescript((ROOT/'schema.sql').read_text()); db.executescript((ROOT/'data/routine_schema_v12.sql').read_text())
+    db.executescript((ROOT/'schema.sql').read_text()); db.executescript((ROOT/'data/routine_schema_v13.sql').read_text())
     db.executemany('INSERT INTO students(id,code,display_name,active) VALUES(?,?,?,?)', [(1,'yueyue','玥玥',1),(2,'second','二宝',1),(3,'inactive','停用',0)])
     db.executemany('INSERT INTO users(id,username,pw_hash,role) VALUES(?,?,?,?)',[(1,'parent','test','parent'),(2,'second','test','kid')])
     db.executemany('INSERT INTO sessions(token,user_id,expires_at) VALUES(?,?,?)',[('p',1,'2999-01-01'),('k',2,'2999-01-01')])
-    db.executescript((ROOT/'data/seed_routine_v12.sql').read_text()); db.executescript((ROOT/'data/seed_routine_v12.sql').read_text())
+    db.executescript((ROOT/'data/seed_routine_v13.sql').read_text()); db.executescript((ROOT/'data/seed_routine_v13.sql').read_text())
     db.execute("INSERT INTO routines(student_id,title,version,effective_from) VALUES(2,'二宝流程',1,'2026-01-01')")
     db.execute("INSERT INTO routine_steps(routine_id,seq,name) SELECT id,1,'二宝任务' FROM routines WHERE student_id=2")
     db.executemany('INSERT INTO papers(student_id,date,title) VALUES(?,?,?)',[(1,'2026-01-01','甲卷'),(2,'2026-01-01','乙卷')])

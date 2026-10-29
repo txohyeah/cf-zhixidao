@@ -1,4 +1,4 @@
--- data/routine_schema_v12.sql
+-- data/routine_schema_v13.sql
 CREATE TABLE IF NOT EXISTS routines (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   student_id INTEGER NOT NULL REFERENCES students(id),

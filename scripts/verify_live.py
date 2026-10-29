@@ -79,16 +79,16 @@ s, d = call('GET', '/api/me')
 fails += not check('me', s == 200 and d.get('authed') and d.get('username') == 'qwenpaw')
 
 if not MATH_ONLY:
-    # v12：临时流程只用独立随机标题，清理时先子表后主表。
+    # v13：临时流程只用独立随机标题，清理时先子表后主表。
     s, d = call('GET', '/api/students')
     students = d.get('students', [])
     target_student = next((x for x in students if x.get('code') == 'yueyue'), None)
-    fails += not check('v12-学生列表', s == 200 and target_student is not None)
+    fails += not check('v13-学生列表', s == 200 and target_student is not None)
     s, d = call('GET', '/api/overview?student=invalid')
-    fails += not check('v12-无效学生拒绝', s in (400, 403) and bool(d.get('error')))
+    fails += not check('v13-无效学生拒绝', s in (400, 403) and bool(d.get('error')))
     s, d = call('GET', '/api/routine')
     default_routine = d.get('routine') or {}
-    fails += not check('v12-默认流程七步', s == 200 and default_routine.get('student_id') == (target_student or {}).get('id')
+    fails += not check('v13-默认流程七步', s == 200 and default_routine.get('student_id') == (target_student or {}).get('id')
                        and default_routine.get('version') == 1 and len(d.get('steps', [])) == 7
                        and isinstance(d.get('pending_wrong'), int))
     title = 'verify-routine-' + secrets.token_hex(12)
@@ -96,9 +96,9 @@ if not MATH_ONLY:
         if target_student:
             s, d = call('POST', '/api/routine?student=yueyue', {'student_id': target_student['id'], 'title': title,
                          'effective_from': '2099-01-01', 'steps': [{'name': 'verify'}]})
-            fails += not check('v12-创建未来版本', s == 200 and d.get('ok'))
+            fails += not check('v13-创建未来版本', s == 200 and d.get('ok'))
             s, d = call('GET', '/api/routine?student=yueyue')
-            fails += not check('v12-未来版本不改变当前版', s == 200 and (d.get('routine') or {}).get('version') == 1)
+            fails += not check('v13-未来版本不改变当前版', s == 200 and (d.get('routine') or {}).get('version') == 1)
         else:
             fails += 2
     finally:
@@ -113,9 +113,9 @@ if not MATH_ONLY:
                 result = execute_sql(db, sql)
                 if not result[0]: raise RuntimeError('测试流程清理失败')
     s, page = fetch_text_retry('/') if 'fetch_text_retry' in globals() else call('GET', '/', text=True)
-    fails += not check('v12-首页导航', s == 200 and '首页' in page and '知识库' in page and '总览' not in page)
+    fails += not check('v13-首页导航', s == 200 and '首页' in page and '知识库' in page and '总览' not in page)
     s, page = call('GET', '/routine.html?student=yueyue', text=True)
-    fails += not check('v12-流程打印页', s == 200 and 'student-context.js' in page and 'window.print' in page)
+    fails += not check('v13-流程打印页', s == 200 and 'student-context.js' in page and 'window.print' in page)
 
     # papers 真数据计数动态对账（overview 考卷摘要=LIMIT 3；基线曾写死 1，用户录新卷即过期——2026-10-27 改动态）
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -252,7 +252,7 @@ if not MATH_ONLY:
     else:
         fails += 3  # 编辑/删除/确认三项无法执行
 
-    # ---- v12 错题页（wrong.html，2026-10-29 首页入口化；防的是只测总览漏了新页）----
+    # ---- v13 错题页（wrong.html，2026-10-29 首页入口化；防的是只测总览漏了新页）----
     s, d = fetch_text_retry('/wrong.html')
     fails += not check('错题页(门禁内, 筛选/清除在页)', s == 200 and '错题' in d and 'api/overview' in d and '清除筛选' in d)
 

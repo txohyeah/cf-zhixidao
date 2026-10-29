@@ -1,5 +1,5 @@
--- data/seed_routine_v12.sql
--- v12 种子:玥玥(学生1)放学流程 v1(七步)。幂等,可重跑。
+-- data/seed_routine_v13.sql
+-- v13 种子:玥玥(学生1)放学流程 v1(七步)。幂等,可重跑。
 -- 注意:D1 限制复合 SELECT 项数,故拆 7 条独立 INSERT(本地 sqlite 无此限)。
 
 INSERT INTO routines (student_id, title, version, effective_from)

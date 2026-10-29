@@ -723,7 +723,7 @@ async function apiAssess(request, env) {
   return json({ ok: true, student, scope, term, nodes, limit, offset });
 }
 
-// ---------- v12：学生和流程 ----------
+// ---------- v13：学生和流程 ----------
 async function apiStudents(env, user) {
   const rows = user.role === 'parent'
     ? (await env.DB.prepare('SELECT id, code, display_name FROM students WHERE active = 1 ORDER BY id').all()).results
