@@ -207,11 +207,21 @@ async function changeMyPassword(request, env, u) {
   return json({ ok: true });
 }
 
-// ---------- 业务：总览 ----------
-async function getStudentId(env) {
-  const s = await env.DB.prepare('SELECT id FROM students WHERE code = ? AND active = 1').bind('yueyue').first();
-  return s ? s.id : null;
+// ---------- 业务：首页 ----------
+// 所有个性化 API 在路由入口解析一次学生上下文；kid 暂以账号名绑定 code。
+async function resolveStudent(request, env, session) {
+  const params = new URL(request.url).searchParams;
+  let row;
+  if (session.role === 'kid') {
+    row = await env.DB.prepare('SELECT id, code FROM students WHERE code = ? AND active = 1').bind(session.username).first();
+  } else if (session.role === 'parent') {
+    row = params.has('student')
+      ? await env.DB.prepare('SELECT id, code FROM students WHERE code = ? AND active = 1').bind(params.get('student')).first()
+      : await env.DB.prepare('SELECT id, code FROM students WHERE active = 1 ORDER BY id LIMIT 1').first();
+  }
+  return row || null;
 }
+async function getStudentId(env) { return env.student.id; }
 async function apiOverview(request, env) {
   const sid = await getStudentId(env);
   if (!sid) return json({ error: '学生数据未初始化' }, 500);
@@ -222,7 +232,7 @@ async function apiOverview(request, env) {
             MAX(CASE WHEN c.result = 'pass' THEN c.date END) AS last_pass,
             MAX(c.date) AS last_try
      FROM levels l LEFT JOIN checkin c
-       ON c.level_id = l.id AND (c.note IS NULL OR c.note <> 'verify-selfcheck')
+       ON c.level_id = l.id AND c.student_id = l.student_id AND (c.note IS NULL OR c.note <> 'verify-selfcheck')
      WHERE l.student_id = ?
      GROUP BY l.id ORDER BY l.sort`).bind(sid).all()).results;
   const days = (await env.DB.prepare(
@@ -239,7 +249,7 @@ async function apiOverview(request, env) {
     const d = new Date(t).toISOString().slice(0, 10);
     if ((passByDay.get(d) || 0) > 0) { streak++; t -= 86400000; } else break;
   }
-  // 总览只露最近 3 张考卷摘要（防时间线无限增长挤掉打卡区），全量进 /papers.html
+  // 首页只露最近 3 张考卷摘要（防时间线无限增长挤掉打卡区），全量进 /papers.html
   const papers = (await env.DB.prepare(
     `SELECT id, date, title, analysis_md, source, subject, term FROM papers
      WHERE student_id = ? ORDER BY date DESC, id DESC LIMIT 3`).bind(sid).all()).results;
@@ -249,9 +259,9 @@ async function apiOverview(request, env) {
     `SELECT id, subject_code, title, stem, answer, analysis, question_type, status,
             wrong_count, correct_count, last_wrong_at, kp_names, stubborn, created_at, node_id
      FROM wrong_questions WHERE student_code = ? AND is_archived = 0
-     ORDER BY stubborn DESC, wrong_count DESC, created_at DESC LIMIT 200`).bind('yueyue').all()).results;
+     ORDER BY stubborn DESC, wrong_count DESC, created_at DESC LIMIT 200`).bind(env.student.code).all()).results;
   const wqTotal = (await env.DB.prepare(
-    `SELECT COUNT(*) AS n FROM wrong_questions WHERE student_code = ? AND is_archived = 0`).bind('yueyue').first());
+    `SELECT COUNT(*) AS n FROM wrong_questions WHERE student_code = ? AND is_archived = 0`).bind(env.student.code).first());
   const wps = (await env.DB.prepare(
     `SELECT k.value AS kp_code, k.value AS kp_name, w.subject_code,
             COUNT(*) AS question_count, SUM(COALESCE(w.wrong_count, 0)) AS wrong_count,
@@ -260,7 +270,7 @@ async function apiOverview(request, env) {
      FROM wrong_questions w, json_each(CASE WHEN json_valid(w.kp_names) THEN w.kp_names ELSE '[]' END) k
      WHERE w.student_code = ? AND w.is_archived = 0 AND k.type = 'text'
      GROUP BY w.subject_code, k.value
-     ORDER BY wrong_count DESC, question_count DESC LIMIT 30`).bind('yueyue').all()).results;
+     ORDER BY wrong_count DESC, question_count DESC LIMIT 30`).bind(env.student.code).all()).results;
   // v10：口算摘要（最近一场 + 连胜 + 总场次）。连胜只按有数据的场次算，
   // math_marks（在校完成无数据）在点阵上单独显示、不计数不断签
   const mathLast = (await env.DB.prepare(
@@ -663,12 +673,10 @@ async function apiPaperItems(request, env, u, id) {
 async function apiAssess(request, env) {
   const url = new URL(request.url);
   const sp = url.searchParams;
-  const student = sp.get('student') || 'yueyue';
+  const student = env.student.code;
   const scope = sp.get('scope') || '';
   if (!['', 'term', 'zhongkao'].includes(scope)) return json({ error: 'scope 仅支持 term/zhongkao/空' }, 400);
-  const sid = student === 'yueyue' ? await getStudentId(env) :
-    (await env.DB.prepare('SELECT id FROM students WHERE code = ? AND active = 1').bind(student).first())?.id;
-  if (!sid) return json({ error: '学生不存在' }, 404);
+  const sid = env.student.id;
   const { limit, offset } = kbPage(url);
   const where = ["status = 'active'"];
   const args = [];
@@ -715,6 +723,59 @@ async function apiAssess(request, env) {
   return json({ ok: true, student, scope, term, nodes, limit, offset });
 }
 
+// ---------- v12：学生和流程 ----------
+async function apiStudents(env, user) {
+  const rows = user.role === 'parent'
+    ? (await env.DB.prepare('SELECT id, code, display_name FROM students WHERE active = 1 ORDER BY id').all()).results
+    : (await env.DB.prepare('SELECT id, code, display_name FROM students WHERE active = 1 AND code = ?').bind(user.username).all()).results;
+  return json({ ok: true, students: rows });
+}
+async function apiRoutine(request, env) {
+  const routine = await env.DB.prepare(`SELECT id, student_id, title, version, effective_from, note FROM routines
+    WHERE student_id = ? AND effective_from <= ? ORDER BY effective_from DESC, version DESC LIMIT 1`)
+    .bind(env.student.id, localToday(0)).first();
+  const steps = routine ? (await env.DB.prepare('SELECT seq, name, note, time_hint FROM routine_steps WHERE routine_id = ? ORDER BY seq, id').bind(routine.id).all()).results : [];
+  const pending = await env.DB.prepare("SELECT COUNT(*) AS n FROM wrong_questions WHERE student_code = ? AND is_archived = 0 AND (status IS NULL OR status <> 'mastered')").bind(env.student.code).first();
+  return json({ ok: true, routine, steps, pending_wrong: pending.n });
+}
+function validRoutineDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(value + 'T00:00:00Z');
+  return !isNaN(date) && date.toISOString().slice(0, 10) === value;
+}
+async function apiRoutineCreate(request, env, user) {
+  if (user.role !== 'parent') return json({error: '仅家长可创建流程'}, 403);
+  let body; try { body = await request.json(); } catch { return json({error: 'JSON 格式错误'}, 400); }
+  if (!body || !Number.isInteger(body.student_id) || body.student_id < 1) return json({error: '学生无效'}, 400);
+  const target = await env.DB.prepare('SELECT id, code FROM students WHERE id = ? AND active = 1').bind(body.student_id).first();
+  if (!target || (new URL(request.url).searchParams.has('student') && target.id !== env.student.id)) return json({error: '学生与请求上下文不一致'}, 400);
+  if (typeof body.title !== 'string' || !body.title.trim() || !validRoutineDate(body.effective_from) || !Array.isArray(body.steps) || !body.steps.length || body.steps.length > 100 || (body.note != null && typeof body.note !== 'string')) return json({error: '流程字段无效'}, 400);
+  if (body.steps.some(s => !s || typeof s.name !== 'string' || !s.name.trim() || (s.note != null && typeof s.note !== 'string') || (s.time_hint != null && (typeof s.time_hint !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(s.time_hint))))) return json({error: '步骤字段无效'}, 400);
+  // 版本计算和步骤插入在同一 D1 batch 内串行执行。
+  const ops = [env.DB.prepare(`INSERT INTO routines(student_id,title,version,effective_from,note)
+    SELECT ?,?,COALESCE(MAX(version),0)+1,?,? FROM routines WHERE student_id=?`)
+    .bind(target.id, body.title.trim(), body.effective_from, body.note ?? null, target.id)];
+  for (const [i, step] of body.steps.entries()) ops.push(env.DB.prepare(`INSERT INTO routine_steps(routine_id,seq,name,note,time_hint)
+    SELECT id,?,?,?,? FROM routines WHERE student_id=? ORDER BY id DESC LIMIT 1`)
+    .bind(i+1,step.name.trim(),step.note ?? null,step.time_hint ?? null,target.id));
+  const result = await env.DB.batch(ops);
+  const id = result[0].meta.last_row_id;
+  const created = await env.DB.prepare('SELECT version FROM routines WHERE id=? AND student_id=?').bind(id,target.id).first();
+  return json({ok:true, id, version:created.version});
+}
+async function apiRoutineUpdate(request, env, user, id) {
+  if (user.role !== 'parent') return json({error:'仅家长可编辑流程'},403);
+  const routine = await env.DB.prepare('SELECT id,effective_from FROM routines WHERE id=? AND student_id=?').bind(id,env.student.id).first();
+  if (!routine) return json({error:'流程不存在'},404);
+  if (routine.effective_from <= localToday(0)) return json({error:'已生效流程不可修改'},400);
+  let body; try { body = await request.json(); } catch { return json({error:'JSON 格式错误'},400); }
+  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(k => !['title','note','effective_from'].includes(k))) return json({error:'字段无效'},400);
+  const keys=Object.keys(body);
+  if (!keys.length || ('title' in body && (typeof body.title !== 'string' || !body.title.trim())) || ('note' in body && body.note != null && typeof body.note !== 'string') || ('effective_from' in body && (!validRoutineDate(body.effective_from) || body.effective_from <= localToday(0)))) return json({error:'字段无效'},400);
+  await env.DB.prepare(`UPDATE routines SET ${keys.map(k=>k+'=?').join(',')}, updated_at=datetime('now') WHERE id=? AND student_id=?`).bind(...keys.map(k=>body[k]),id,env.student.id).run();
+  return json({ok:true});
+}
+
 // ---------- main fetch ----------
 export default {
   async fetch(request, env) {
@@ -731,6 +792,14 @@ export default {
       if (p === '/api/logout' && method === 'POST') return apiLogout(request, env);
       if (p === '/api/me') return apiMe(request, env);
       if (p === '/api/me/password' && method === 'POST') return changeMyPassword(request, env, u);
+      if (p === '/api/students' && method === 'GET') return apiStudents(env, u);
+      const student = await resolveStudent(request, env, u);
+      if (!student) return json({error: '学生无效或无权访问'}, 403);
+      env = Object.assign(Object.create(env), {student});
+      if (p === '/api/routine' && method === 'GET') return apiRoutine(request, env);
+      if (p === '/api/routine' && method === 'POST') return apiRoutineCreate(request, env, u);
+      const routineMatch = p.match(/^\/api\/routine\/(\d+)$/);
+      if (routineMatch && method === 'PUT') return apiRoutineUpdate(request, env, u, parseInt(routineMatch[1], 10));
       if (p === '/api/overview') return apiOverview(request, env);
       if (p === '/api/checkin' && method === 'POST') return apiCheckin(request, env, u);
       if (p === '/api/papers' && method === 'GET') return apiPapers(request, env);

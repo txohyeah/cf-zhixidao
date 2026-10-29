@@ -122,17 +122,11 @@ main { max-width:1120px; margin:auto; padding:26px 20px; }
 .detail-placeholder h2 { margin-bottom:12px; }
 @media(max-width:899px) { .kb-layout { grid-template-columns:1fr; } .tree-content { min-height:180px; } .detail-panel { min-height:260px; } }
 </style>
-</head>
+<style>.nav-group{font-size:12px;opacity:.75;padding:0 6px;align-self:center}.nav-library{border-left:1px solid currentColor;margin-left:6px;padding-left:12px} #student-switch{margin-left:auto;padding:5px;font-size:14px} #student-switch select{font:inherit}</style><script src="/student-context.js"></script></head>
 <body>
 <header>
-  <div class="top"><div class="brand">智习岛<small>学习手账 · 知识地图</small></div><a href="/cards.html">纸卡 · 打印</a></div>
-  <nav class="journal-nav" aria-label="主导航">
-    <a href="/">总览</a>
-    <a href="/kb.html" aria-current="page">知识树</a>
-    <a href="/wrong.html">错题</a>
-    <a href="/papers.html">考卷</a>
-    <a href="/math.html">口算</a>
-  </nav>
+  <div class="top"><div class="brand">智习岛<small>学习手账 · 知识地图</small></div><a href="/cards.html">纸卡 · 打印</a><span id="student-switch"></span></div>
+  <nav class="journal-nav" aria-label="主导航"><span class="nav-group">学习</span><a href="/">首页</a><a href="/wrong.html">错题</a><a href="/papers.html">考卷</a><a href="/math.html">口算</a><span class="nav-group nav-library">知识库</span><a href="/kb.html" aria-current="page">知识树</a></nav>
 </header>
 <main>
   <div class="kb-heading"><h1>把知识连成一张<span>地图</span></h1>
@@ -335,7 +329,7 @@ $('tree').addEventListener('click',e=>{
   else if (e.target.closest('[data-retry-tree]')) refresh();
 });
 $('detail').addEventListener('click',e=>{const b=e.target.closest('[data-retry-detail]');if(b)showNode(Number(b.dataset.retryDetail));});
-// 从总览重点知识点直接进入详情，并展开到该节点。
+// 从首页重点知识点直接进入详情，并展开到该节点。
 async function start() {
   const id = Number(new URLSearchParams(location.search).get('node_id'));
   if (Number.isSafeInteger(id) && id > 0) {

@@ -79,6 +79,44 @@ s, d = call('GET', '/api/me')
 fails += not check('me', s == 200 and d.get('authed') and d.get('username') == 'qwenpaw')
 
 if not MATH_ONLY:
+    # v12：临时流程只用独立随机标题，清理时先子表后主表。
+    s, d = call('GET', '/api/students')
+    students = d.get('students', [])
+    target_student = next((x for x in students if x.get('code') == 'yueyue'), None)
+    fails += not check('v12-学生列表', s == 200 and target_student is not None)
+    s, d = call('GET', '/api/overview?student=invalid')
+    fails += not check('v12-无效学生拒绝', s in (400, 403) and bool(d.get('error')))
+    s, d = call('GET', '/api/routine')
+    default_routine = d.get('routine') or {}
+    fails += not check('v12-默认流程七步', s == 200 and default_routine.get('student_id') == (target_student or {}).get('id')
+                       and default_routine.get('version') == 1 and len(d.get('steps', [])) == 7
+                       and isinstance(d.get('pending_wrong'), int))
+    title = 'verify-routine-' + secrets.token_hex(12)
+    try:
+        if target_student:
+            s, d = call('POST', '/api/routine?student=yueyue', {'student_id': target_student['id'], 'title': title,
+                         'effective_from': '2099-01-01', 'steps': [{'name': 'verify'}]})
+            fails += not check('v12-创建未来版本', s == 200 and d.get('ok'))
+            s, d = call('GET', '/api/routine?student=yueyue')
+            fails += not check('v12-未来版本不改变当前版', s == 200 and (d.get('routine') or {}).get('version') == 1)
+        else:
+            fails += 2
+    finally:
+        if target_student:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from cf_d1 import find_db, execute_sql
+            db = find_db()
+            assert db, 'D1 不可达，无法清理测试流程'
+            where = "student_id=%d AND title='%s' AND effective_from='2099-01-01'" % (target_student['id'], title)
+            for sql in ('DELETE FROM routine_steps WHERE routine_id IN (SELECT id FROM routines WHERE ' + where + ')',
+                        'DELETE FROM routines WHERE ' + where):
+                result = execute_sql(db, sql)
+                if not result[0]: raise RuntimeError('测试流程清理失败')
+    s, page = fetch_text_retry('/') if 'fetch_text_retry' in globals() else call('GET', '/', text=True)
+    fails += not check('v12-首页导航', s == 200 and '首页' in page and '知识库' in page and '总览' not in page)
+    s, page = call('GET', '/routine.html?student=yueyue', text=True)
+    fails += not check('v12-流程打印页', s == 200 and 'student-context.js' in page and 'window.print' in page)
+
     # papers 真数据计数动态对账（overview 考卷摘要=LIMIT 3；基线曾写死 1，用户录新卷即过期——2026-10-27 改动态）
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from cf_d1 import find_db, execute_sql as _esql
@@ -230,7 +268,7 @@ if not MATH_ONLY:
         from cf_d1 import find_db, execute_sql
         db = find_db()
         assert db, 'D1 zhixidao-db 不可达（错题总数对账基线取不到）'
-        return execute_sql(db, "SELECT COUNT(*) n FROM wrong_questions WHERE is_archived=0")[1][0]['n']
+        return execute_sql(db, "SELECT COUNT(*) n FROM wrong_questions WHERE is_archived=0 AND student_code='yueyue'")[1][0]['n']
     s, d = call('GET', '/api/overview')
     n_db = wrong_truth()
     fails += not check('错题-总数动态对账(overview vs D1)', s == 200 and d.get('wq_total') == n_db,
@@ -336,10 +374,10 @@ if not MATH_ONLY:
         m = q("SELECT COUNT(*) n FROM knowledge_nodes WHERE status='active' AND subject='math'")[0]['n']
         c = q("SELECT COUNT(*) n FROM knowledge_nodes WHERE status='active' AND subject='chinese'")[0]['n']
         hang = q("SELECT COUNT(*) n FROM wrong_questions w JOIN knowledge_nodes n ON n.id=w.node_id "
-                 "WHERE w.is_archived=0 AND n.status='active'")[0]['n']
-        total = q("SELECT COUNT(*) n FROM wrong_questions WHERE is_archived=0")[0]['n']
+                 "WHERE w.is_archived=0 AND w.student_code='yueyue' AND n.status='active'")[0]['n']
+        total = q("SELECT COUNT(*) n FROM wrong_questions WHERE is_archived=0 AND student_code='yueyue'")[0]['n']
         recite = q("SELECT COUNT(*) n FROM wrong_questions w JOIN knowledge_nodes n ON n.id=w.node_id "
-                   "WHERE w.is_archived=0 AND n.name='背诵积累'")[0]['n']
+                   "WHERE w.is_archived=0 AND w.student_code='yueyue' AND n.name='背诵积累'")[0]['n']
         return m, c, hang, total, recite
 
     KB = kb_truth()   # (数学节点, 语文节点, 挂载错题, 错题总数, 背诵积累挂载数)

@@ -153,12 +153,12 @@
   .map-counts { margin:4px 0 12px; font-size:14px; }
   .map-points { display:flex; flex-wrap:wrap; gap:8px 14px; font-size:14px; }
 </style>
-</head>
+<style>.nav-group{font-size:12px;opacity:.75;padding:0 6px;align-self:center}.nav-library{border-left:1px solid currentColor;margin-left:6px;padding-left:12px} #student-switch{margin-left:auto;padding:5px;font-size:14px} #student-switch select{font:inherit}</style><script src="/student-context.js"></script></head>
 <body>
 <header>
   <div class="top">
     <div class="brand">智习岛<small>我们的学习小站</small></div>
-    <div class="acts">
+    <div class="acts"><span id="student-switch"></span>
       <span id="who" style="font-size:13px;opacity:.9;margin-right:4px"></span>
       <button onclick="openPwd()">改密码</button>
       <button onclick="logout()">退出</button>
@@ -168,17 +168,12 @@
     <span class="num" id="streak">0</span><span class="lbl">天连胜</span>
     <span class="lbl" id="today"></span>
   </div>
-  <nav class="journal-nav" aria-label="主导航">
-    <a href="/" aria-current="page">总览</a>
-    <a href="/kb.html">知识树</a>
-    <a href="/wrong.html">错题</a>
-    <a href="/papers.html">考卷</a>
-    <a href="/math.html">口算</a>
-  </nav>
+  <nav class="journal-nav" aria-label="主导航"><span class="nav-group">学习</span><a href="/" aria-current="page">首页</a><a href="/wrong.html">错题</a><a href="/papers.html">考卷</a><a href="/math.html">口算</a><span class="nav-group nav-library">知识库</span><a href="/kb.html">知识树</a></nav>
 </header>
 <main>
   <div class="lay">
     <div class="col-main">
+      <section class="box"><h2>放学流程</h2><p id="routineSummary">正在加载流程…</p><a href="/routine.html">查看/打印流程 →</a></section>
       <div class="box">
         <h2>最近 14 天</h2>
         <div class="dots" id="dots"></div>
@@ -261,6 +256,7 @@ async function load(){
   const r = await fetch('/api/overview'); 
   if (r.status === 401) { location.href = '/login'; return; }
   const d = await r.json();
+  if (!r.ok) { document.getElementById('levels').textContent = d.error || '首页加载失败'; return; }
   const me = await (await fetch('/api/me')).json();
   document.getElementById('who').textContent = me.username ? (me.username + (me.role==='parent'?'（家长）':'')) : '';
   document.getElementById('today').textContent = '今天 ' + d.today;
@@ -284,7 +280,7 @@ async function load(){
       <div class="detail">${esc(l.detail || '')}</div>
       <div class="stat">尝试 <b>${l.attempts || 0}</b> 次 · 全对 <b>${l.passes || 0}</b> 次${l.last_pass ? ' · 最近全对 ' + l.last_pass : ''}</div>
     </div>`;
-  }).join('');
+  }).join('') || '<span class="empty">还没有关卡</span>';
   // 错题摘要：顽固数量来自当前已加载的错题。
   const wq = d.wrong_questions || [];
   const stubborn = wq.filter(q => q.stubborn).length;
@@ -322,7 +318,7 @@ async function savePwd(){
   else { msg.textContent = d.error || '失败'; msg.className='msg err'; }
 }
 async function logout(){ await fetch('/api/logout', {method:'POST'}); location.href='/login'; }
-// 知识地图独立加载：接口失败静默降级，不影响打卡与总览。
+// 知识地图独立加载：接口失败静默降级，不影响打卡与首页。
 async function loadKnowledgeMap(){
   try {
     const r = await fetch('/api/assess?limit=500');
@@ -344,5 +340,7 @@ async function loadKnowledgeMap(){
 loadKnowledgeMap();
 load();
 </script>
-</body>
+<script>
+fetch('/api/routine').then(r => { if (!r.ok) throw Error(); return r.json(); }).then(d => { document.getElementById('routineSummary').textContent = d.routine ? d.routine.title + ' · 从运动到睡前阅读，按顺序安排。' : '还没有放学流程'; }).catch(() => { document.getElementById('routineSummary').textContent = '流程暂不可用'; });
+</script></body>
 </html>

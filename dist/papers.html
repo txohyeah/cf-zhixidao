@@ -120,24 +120,18 @@
   [style*="color:#a29b8e"], [style*="color:#8b857a"] { color:var(--muted) !important; }
   button[style*="background:#efe9dd"] { background:var(--wash) !important; color:var(--ink-blue) !important; }
 </style>
-</head>
+<style>.nav-group{font-size:12px;opacity:.75;padding:0 6px;align-self:center}.nav-library{border-left:1px solid currentColor;margin-left:6px;padding-left:12px} #student-switch{margin-left:auto;padding:5px;font-size:14px} #student-switch select{font:inherit}</style><script src="/student-context.js"></script></head>
 <body>
 <header>
   <div class="top">
     <div class="brand">考卷库<small>智习岛 · 每张卷都留档</small></div>
-    <div class="acts">
+    <div class="acts"><span id="student-switch"></span>
       <span id="who" style="font-size:13px;opacity:.9;margin-right:4px"></span>
-      <button onclick="location.href='/'">返回总览</button>
+      <button onclick="location.href='/' + (studentContext.code ? '?student=' + encodeURIComponent(studentContext.code) : '')">返回首页</button>
       <button onclick="logout()">退出</button>
     </div>
   </div>
-  <nav class="journal-nav" aria-label="主导航">
-    <a href="/">总览</a>
-    <a href="/kb.html">知识树</a>
-    <a href="/wrong.html">错题</a>
-    <a href="/papers.html" aria-current="page">考卷</a>
-    <a href="/math.html">口算</a>
-  </nav>
+  <nav class="journal-nav" aria-label="主导航"><span class="nav-group">学习</span><a href="/">首页</a><a href="/wrong.html">错题</a><a href="/papers.html" aria-current="page">考卷</a><a href="/math.html">口算</a><span class="nav-group nav-library">知识库</span><a href="/kb.html">知识树</a></nav>
 </header>
 <main>
   <div class="bar">
