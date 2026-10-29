@@ -1,0 +1,28 @@
+/* 页面索引贴与孩子选择：沿用学习手账已有变量。 */
+.journal-nav .nav-group,.v13-nav span {
+  align-self:flex-end; color:var(--ink-blue); font:600 11px/1.2 "PingFang SC","Microsoft YaHei",sans-serif;
+  letter-spacing:.08em; white-space:nowrap; padding:0 2px 11px;
+}
+.journal-nav .nav-library,.v13-nav .v13-lib { border-left:1px solid var(--line); margin-left:4px; padding-left:12px; }
+#student-switch { display:inline-flex; align-items:center; color:var(--ink-blue); background:var(--paper);
+  border:1px solid var(--line); border-radius:4px; padding:5px 10px; font-size:13px; line-height:1.4; white-space:nowrap; }
+#student-switch:empty { display:none; }
+#student-switch select { appearance:none; color:var(--ink-blue); background:transparent; border:0; border-radius:0;
+  font:inherit; padding:0 18px 0 0; cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--ink-blue) 50%),linear-gradient(135deg,var(--ink-blue) 50%,transparent 50%);
+  background-position:calc(100% - 8px) 50%,calc(100% - 4px) 50%; background-size:4px 4px; background-repeat:no-repeat; }
+#student-switch select:focus-visible { outline:2px solid var(--ink-blue); outline-offset:4px; }
+.v13-nav { display:flex; gap:8px; max-width:1080px; margin:20px auto 0; padding:5px 20px 0; }
+.v13-nav a { display:block; min-width:90px; padding:9px 18px 7px; text-align:center; text-decoration:none;
+  font-family:var(--hand); font-size:18px; color:var(--ink-blue); background:rgba(52,85,139,.06);
+  border:1px solid var(--line); border-bottom:0; border-radius:7px 7px 0 0; }
+.v13-nav a:hover { background:rgba(52,85,139,.12); }
+.v13-nav a:focus-visible { outline:2px solid var(--ink-blue); outline-offset:4px; }
+@media(max-width:600px) {
+  .journal-nav,.v13-nav { gap:4px; }
+  .journal-nav .nav-group,.v13-nav span { font-size:10px; letter-spacing:0; padding:0 0 10px; }
+  .journal-nav .nav-library,.v13-nav .v13-lib { padding-left:5px; margin-left:0; }
+  .v13-nav { padding-inline:12px; }
+  .v13-nav a { min-width:0; flex:1; padding:9px 4px 7px; font-size:16px; white-space:nowrap; }
+}
+@media print { .v13-nav { display:none !important; } }

@@ -1,6 +1,48 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>放学流程 · 智习岛</title><script src="/student-context.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f6f3eb;color:#222;font-family:system-ui,sans-serif}header{display:flex;gap:16px;align-items:center;padding:16px 24px;background:#e9e1d2}header #student-switch{margin-left:auto}main{max-width:800px;margin:24px auto;padding:24px;background:white}h1{font-size:30px;margin:0 0 8px}.meta,.online,footer{color:#555;font-size:14px}button{font:inherit;cursor:pointer;padding:8px 15px}ol{list-style:none;padding:0;margin:20px 0}li{display:grid;grid-template-columns:45px 1fr 30px;align-items:center;gap:12px;padding:15px 4px;border-bottom:1px solid #aaa;break-inside:avoid}.number{font-size:25px;font-weight:bold}.step{font-size:22px;font-weight:700}.note{display:block;font-size:16px;font-weight:400;margin-top:4px}.check{width:22px;height:22px;border:2px solid #222}footer{margin-top:18px}@page{size:A4 portrait;margin:15mm}@media print{body{background:white}header,.online,button{display:none}main{margin:0;padding:0;max-width:none}h1{font-size:24pt}li{padding:5mm 1mm}.step{font-size:16pt}.note{font-size:11pt}.number{font-size:18pt}footer{font-size:9pt}}
-</style><style>.v13-nav{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 20px}.v13-nav span{font-size:12px}.v13-lib{border-left:1px solid;padding-left:12px}@media print{.v13-nav{display:none}}</style></head><body><header><a href="/">首页</a><a href="/print.html">打印中心</a><span id="student-switch"></span></header><nav class="v13-nav" aria-label="主导航"><span>学习</span><a href="/">首页</a><a href="/wrong.html">错题</a><a href="/papers.html">考卷</a><a href="/math.html">口算</a><span class="v13-lib">知识库</span><a href="/kb.html">知识树</a></nav><main><h1 id="title">放学流程</h1><p class="meta" id="meta"></p><p class="online" id="reference"></p><button type="button" onclick="window.print()">🖨 打印</button><p id="message">正在加载…</p><ol id="steps"></ol><footer id="footer"></footer></main><script>
+:root { --paper:#FBFBF8; --grid-line:#D9E6EC; --ink-blue:#34558B; --highlight:#FFE066; --ink:#2A2B28; --muted:#626A70; --line:rgba(52,85,139,.18); --wash:rgba(52,85,139,.06); --hand:KaiTi,STKaiti,"Kaiti SC",serif; --mono:ui-monospace,SFMono-Regular,Consolas,monospace; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); font-family:"PingFang SC","Microsoft YaHei",sans-serif; line-height:1.6; background-color:var(--paper); background-image:linear-gradient(rgba(217,230,236,.38) 1px,transparent 1px),linear-gradient(90deg,rgba(217,230,236,.38) 1px,transparent 1px); background-size:24px 24px; }
+header { display:flex; align-items:center; gap:20px; max-width:1080px; margin:auto; padding:26px 24px 0; }
+header a { color:var(--ink-blue); text-underline-offset:4px; font-size:14px; }
+header a:first-child { font:700 25px var(--hand); text-decoration:none; }
+header #student-switch { margin-left:auto; }
+main { max-width:760px; margin:28px auto 60px; padding:30px 38px; background:var(--paper); border:1px solid var(--line); border-radius:6px; box-shadow:2px 3px 0 rgba(52,85,139,.04); }
+h1 { display:inline; font:700 34px/1.4 var(--hand); letter-spacing:.03em; background:linear-gradient(transparent 62%,var(--highlight) 62%,var(--highlight) 90%,transparent 90%); }
+.meta,.online,footer { color:var(--muted); font-size:13px; }
+.meta { margin:8px 0 0; font-family:var(--mono); }
+.online { margin:14px 0; }
+button { color:var(--paper); background:var(--ink-blue); border:1px solid var(--ink-blue); border-radius:4px; font:inherit; padding:8px 16px; cursor:pointer; }
+:focus-visible { outline:2px solid var(--ink-blue); outline-offset:4px; }
+#message { color:var(--muted); font-size:13px; }
+ol { list-style:none; padding:0; margin:24px 0; }
+li { display:grid; grid-template-columns:40px minmax(0,1fr) 28px; align-items:center; gap:14px; margin-top:8px; padding:13px 16px; border:1px solid var(--line); border-radius:6px; background-color:var(--paper); background-image:linear-gradient(rgba(217,230,236,.38) 1px,transparent 1px); background-size:100% 24px; break-inside:avoid; }
+.number { color:var(--ink-blue); font:700 22px/1 var(--mono); text-align:center; }
+.step { min-width:0; font:700 21px/1.45 var(--hand); }
+.note { display:block; margin-top:3px; color:var(--muted); font:400 13px/1.6 "PingFang SC","Microsoft YaHei",sans-serif; }
+.check { width:21px; height:21px; border:1.5px solid var(--ink-blue); background:var(--paper); border-radius:2px; }
+footer { border-top:1px solid var(--line); padding-top:14px; font-family:var(--mono); }
+@media(max-width:600px) {
+ header { padding:18px 16px 0; gap:12px; flex-wrap:wrap; }
+ header a:first-child { font-size:22px; }
+ main { margin:20px 12px 32px; padding:22px 18px; }
+ h1 { font-size:23px; }
+ li { grid-template-columns:30px minmax(0,1fr) 23px; gap:9px; padding:12px 10px; }
+ .number { font-size:19px; } .step { font-size:19px; } .check { width:20px; height:20px; }
+}
+@page { size:A4 portrait; margin:15mm; }
+@media print {
+ body { background:#fff; color:#000; }
+ header,.v13-nav,.online,button { display:none !important; }
+ main { max-width:none; margin:0; padding:0; border:0; border-radius:0; box-shadow:none; background:#fff; }
+ h1 { color:#000; background:none; font-size:24pt; }
+ .meta,.note,footer { color:#000; }
+ .meta { font-size:10pt; } ol { margin:5mm 0; }
+ li { margin:0; padding:4mm 1mm; border:0; border-bottom:.5pt solid #777; border-radius:0; background:#fff; box-shadow:none; grid-template-columns:10mm minmax(0,1fr) 7mm; gap:3mm; }
+ .number { color:#000; font-size:17pt; } .step { color:#000; font-size:16pt; } .note { font-size:10pt; }
+ .check { width:6mm; height:6mm; border:1pt solid #000; background:#fff; }
+ footer { margin-top:5mm; padding-top:3mm; border-color:#777; font-size:9pt; }
+}
+</style><link rel="stylesheet" href="/journal-v13.css"></head><body><header><a href="/">首页</a><a href="/print.html">打印中心</a><span id="student-switch"></span></header><nav class="v13-nav" aria-label="主导航"><span>学习</span><a href="/">首页</a><a href="/wrong.html">错题</a><a href="/papers.html">考卷</a><a href="/math.html">口算</a><span class="v13-lib">知识库</span><a href="/kb.html">知识树</a></nav><main><h1 id="title">放学流程</h1><p class="meta" id="meta"></p><p class="online" id="reference"></p><button type="button" onclick="window.print()">🖨 打印</button><p id="message">正在加载…</p><ol id="steps"></ol><footer id="footer"></footer></main><script>
 (async()=>{try{const r=await fetch('/api/routine');if(!r.ok)throw Error();const d=await r.json();const msg=document.getElementById('message');if(!d.routine){msg.textContent='还没有放学流程';return}msg.remove();document.getElementById('title').textContent=d.routine.title;document.getElementById('meta').textContent='版本 '+d.routine.version+' · 生效日期 '+d.routine.effective_from;document.getElementById('reference').textContent='当前待复习 '+d.pending_wrong+' 道（仅供参考）';document.getElementById('footer').textContent=d.routine.title+' · 生效日期 '+d.routine.effective_from;const list=document.getElementById('steps');d.steps.forEach((s,i)=>{const li=document.createElement('li'),n=document.createElement('span'),content=document.createElement('div'),check=document.createElement('span');n.className='number';n.textContent=i+1;content.className='step';content.textContent=s.name+(s.time_hint?' · '+s.time_hint:'');if(s.note){const note=document.createElement('span');note.className='note';note.textContent=s.note;content.append(note)}check.className='check';check.setAttribute('aria-label','纸面勾选框');li.append(n,content,check);list.append(li)})}catch(e){document.getElementById('message').textContent='流程加载失败，请检查孩子选择后重试'}})();
 </script></body></html>
