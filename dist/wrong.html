@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>错题 · 智习岛</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC","Microsoft YaHei",sans-serif; background:var(--paper); color:var(--ink); padding-bottom:60px; }
+  header { background:var(--paper); color:var(--paper); padding:18px 20px 14px; }
+  .top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; max-width:880px; margin:0 auto; }
+  .brand { font-size:22px; font-weight:700; }
+  .brand small { font-weight:400; opacity:.85; font-size:13px; margin-left:8px; }
+  .top .acts button { background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.5); color:var(--paper); border-radius:8px; padding:5px 12px; font-size:13px; cursor:pointer; margin-left:6px; }
+  .streak-band { max-width:880px; margin:0 auto; display:flex; align-items:baseline; gap:10px; margin-top:6px; }
+  .streak-band .num { font-size:30px; font-weight:800; }
+  .streak-band .lbl { font-size:13px; opacity:.9; }
+  main { max-width:1080px; margin:0 auto; padding:16px; }
+  /* 双栏 dashboard：左=打卡展示，右=信息流（错题+考卷），滚动时右栏 sticky 可见 */
+  .lay { display:grid; grid-template-columns: 1fr 390px; gap:30px; align-items:start; }
+  .col-side { position:sticky; top:12px; }
+  /* 模块面板：每个功能块一个白色容器，标题装在里面 */
+  .box { background:var(--paper); border-radius:14px; padding:14px 16px 12px; box-shadow:0 1px 4px rgba(90,70,40,.08); }
+  .box + .box { margin-top:18px; }
+  .box > h2 { margin:0 0 10px; }
+  .box .card, .box details.wq, .box details.paper, .box .kp { border:1px solid var(--line); box-shadow:none; }
+  .box .howto { background:var(--wash); box-shadow:none; margin-bottom:0; }
+  @media (max-width: 900px) {
+    .lay { grid-template-columns: 1fr; }
+    .col-side { position:static; }
+  }
+  h2 { font-size:15px; color:var(--ink-blue); margin:18px 0 10px; }
+  .dots { display:flex; gap:5px; flex-wrap:wrap; }
+  .dot { width:16px; height:16px; border-radius:50%; background:#e4ded2; }
+  .dot.full { background:var(--ink-blue); }
+  .dot.part { background:#ffc99e; }
+  .dot .d { display:none; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(205px,1fr)); gap:10px; }
+  .card { background:var(--paper); border-radius:12px; padding:12px 14px; box-shadow:0 1px 4px rgba(90,70,40,.08); display:flex; flex-direction:column; gap:6px; }
+  .card .name { font-weight:700; font-size:14px; }
+  .card .kind { display:inline-block; font-size:11px; background:var(--wash); color:var(--ink-blue); border-radius:6px; padding:1px 7px; margin-left:6px; vertical-align:1px; }
+  .card .detail { font-size:12px; color:var(--muted); line-height:1.5; }
+  .card .stat { font-size:12px; color:var(--muted); }
+  .card .stat b { color:var(--ink-blue); }
+  .btn-pass { background:var(--ink-blue); color:var(--paper); }
+  .card.done { box-shadow:0 1px 4px rgba(255,111,145,.35), inset 0 0 0 1.5px var(--ink-blue); }
+  details.paper { background:var(--paper); border-radius:12px; margin-bottom:8px; box-shadow:0 1px 4px rgba(90,70,40,.08); }
+  details.paper summary { padding:10px 14px; cursor:pointer; font-size:13px; display:flex; align-items:baseline; flex-wrap:wrap; gap:6px; list-style:none; }
+  details.paper summary::-webkit-details-marker { display:none; }
+  details.paper summary .pt { font-weight:700; font-size:13px; }
+  details.paper summary .pd { font-size:12px; color:var(--muted); margin-left:auto; }
+  .paper-body { padding:0 14px 12px; font-size:13px; line-height:1.7; color:var(--ink); }
+  .paper-body b { color:var(--ink-blue); }
+  .paper-body ul { margin:4px 0 4px 18px; }
+  .tag { font-size:11px; border-radius:6px; padding:1px 7px; font-weight:400; }
+  .t-subj { background:var(--wash); color:var(--ink-blue); }
+  .t-term { background:var(--wash); color:var(--ink-blue); }
+  .modal-mask { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:9; align-items:center; justify-content:center; }
+  .modal { background:var(--paper); border-radius:14px; padding:20px; width:300px; }
+  .modal h3 { font-size:15px; margin-bottom:12px; }
+  .modal input { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; margin-bottom:10px; font-size:14px; }
+  .modal .row { display:flex; gap:8px; }
+  .modal .row button { flex:1; padding:9px 0; border:0; border-radius:8px; font-size:14px; cursor:pointer; }
+  .msg { font-size:12px; min-height:16px; margin-bottom:8px; }
+  .msg.err { color:var(--ink); } .msg.ok { color:var(--ink-blue); }
+  .empty { color:var(--muted); font-size:13px; }
+  .kp-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .kp { background:var(--paper); border-radius:8px; padding:4px 10px; font-size:12px; box-shadow:0 1px 3px rgba(90,70,40,.08); }
+  .kp b { color:var(--ink-blue); }
+  details.wq { background:var(--paper); border-radius:12px; margin-bottom:8px; box-shadow:0 1px 4px rgba(90,70,40,.08); }
+  details.wq summary { padding:10px 14px; cursor:pointer; font-size:13px; font-weight:600; }
+  .wq-body { padding:0 14px 12px; font-size:13px; line-height:1.7; color:var(--ink); }
+  .badge { font-size:11px; border-radius:6px; padding:1px 7px; margin-left:6px; font-weight:400; }
+  .b-learn { background:var(--wash); color:var(--ink-blue); }
+  .b-master { background:var(--wash); color:var(--ink-blue); }
+  .b-new { background:var(--wash); color:var(--muted); }
+  .subj { font-size:11px; background:var(--wash); color:var(--ink-blue); border-radius:6px; padding:1px 7px; margin-right:6px; font-weight:400; }
+  .wq-more { text-align:center; margin:6px 0 12px; }
+  .wq-more a { font-size:13px; color:var(--ink-blue); }
+  .howto { background:var(--paper); border-radius:12px; padding:10px 14px; font-size:13px; color:var(--muted); box-shadow:0 1px 4px rgba(90,70,40,.08); margin-bottom:10px; }
+  .howto summary { cursor:pointer; font-weight:600; color:var(--ink); }
+  .howto ol { margin:8px 0 2px; padding-left:20px; line-height:1.8; }
+  .howto a { color:var(--ink-blue); }
+
+  /* v11 学习手账：纸面、钢笔与索引贴；状态色仅供评估使用。 */
+  :root {
+    --paper:#FBFBF8; --grid-line:#D9E6EC; --ink-blue:#34558B; --highlight:#FFE066; --ink:#2A2B28;
+    --lamp-red:#D9534F; --lamp-yellow:#E8B93E; --lamp-green:#5CA05C; --lamp-gray:#B9BDB6;
+    --muted:#626A70; --line:rgba(52,85,139,.18); --wash:rgba(52,85,139,.06);
+    --hand:KaiTi,STKaiti,"Kaiti SC",serif; --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+  }
+  body { color:var(--ink); background-color:var(--paper);
+    background-image:linear-gradient(rgba(217,230,236,.38) 1px,transparent 1px),linear-gradient(90deg,rgba(217,230,236,.38) 1px,transparent 1px);
+    background-size:24px 24px; line-height:1.6; }
+  header { background:var(--paper); color:var(--ink); border-bottom:1px solid var(--line); padding:26px 24px 0; }
+  .top { max-width:1080px; }
+  .brand,.logo { font-family:var(--hand); font-size:28px; color:var(--ink-blue); letter-spacing:1px; }
+  .brand small { font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:var(--muted); font-size:12px; letter-spacing:0; }
+  h1,h2,h3,.card .name,.paper .pt,.rec .pt { font-family:var(--hand); color:var(--ink); }
+  h2,.bar h2 { font-size:20px; color:var(--ink); }
+  h2 small,h2 span { font-family:"PingFang SC","Microsoft YaHei",sans-serif; }
+  a { color:var(--ink-blue); text-underline-offset:4px; }
+  button,input,select,textarea { font:inherit; }
+  button { cursor:pointer; }
+  button:disabled { cursor:wait; opacity:.65; }
+  :focus-visible { outline:2px solid var(--ink-blue); outline-offset:4px; }
+  .top .acts button { color:var(--ink-blue); background:transparent; border:1px solid var(--line); border-radius:4px; }
+  .journal-nav { display:flex; gap:8px; max-width:1080px; margin:26px auto 0; padding-top:5px; }
+  .journal-nav a { display:block; min-width:90px; padding:9px 18px 7px; text-align:center; text-decoration:none;
+    font-family:var(--hand); font-size:18px; color:var(--ink-blue); background:var(--wash);
+    border:1px solid var(--line); border-bottom:0; border-radius:7px 7px 0 0; }
+  .journal-nav a:hover { background:rgba(52,85,139,.12); }
+  .journal-nav a[aria-current="page"] { color:var(--paper); background:var(--ink-blue); padding-inline:25px; transform:translateY(-4px); margin-bottom:-4px; }
+  main { padding-top:26px; }
+  .box,.card,.paper,.rec,.stat,.modal,details.wq,details.paper { background:var(--paper); border:1px solid var(--line); border-radius:6px; box-shadow:2px 3px 0 rgba(52,85,139,.04); }
+  .box { padding:20px; }
+  .box > h2 { padding-bottom:10px; border-bottom:1px solid var(--line); margin-bottom:14px; }
+  .box .card,.box details.wq,.box details.paper,.box .kp { border-color:var(--line); }
+  .empty,.hint,.cnt,.pd,.detail,.stat .k,.stat .s,.rec .note { color:var(--muted); }
+  .stat .v,.streak-band .num,.cnt,.pd,.card .stat b,.map-counts { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  .streak-band { max-width:1080px; margin:16px auto 0; color:var(--ink-blue); }
+  .streak-band .lbl { color:var(--muted); }
+  .btn-new,.btn-pass,.chip.on { background:var(--ink-blue); color:var(--paper); border-color:var(--ink-blue); }
+  .op-edit,.op-del,.more button,.addrow,.mk button,.chip,.tag,.kind,.badge,.subj { background:var(--wash); color:var(--ink-blue); border-color:var(--line); border-radius:4px; }
+  .t-subj,.t-term,.t-topic,.t-est,.t-src,.b-learn,.b-master,.b-new { background:var(--wash); color:var(--ink-blue); }
+  .card .kind { background:var(--wash); color:var(--ink-blue); }
+  .card.done { box-shadow:inset 3px 0 var(--ink-blue); border-color:var(--ink-blue); }
+  .card .stat b,.kp b,table.cmp td b,.paper .pa b,.paper-body b { color:var(--ink-blue); }
+  .dot { background:rgba(52,85,139,.12); border-radius:3px; }
+  .dot.full { background:var(--ink-blue); }
+  .dot.part { background:rgba(52,85,139,.4); }
+  .howto,.box .howto,.kp { background:var(--wash); color:var(--muted); }
+  .howto a,.wq-more a { color:var(--ink-blue); }
+  .modal input,.modal select,.modal textarea,input,select,textarea { border-color:var(--line); background:var(--paper); color:var(--ink); border-radius:4px; }
+  .msg.err { color:var(--ink); text-decoration:underline wavy var(--ink-blue); text-underline-offset:4px; }
+  .msg.ok { color:var(--ink-blue); }
+  .marker { color:var(--ink); padding:0 2px; background-repeat:no-repeat; background-size:100% 100%; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+  .lamp-2 { background-image:linear-gradient(transparent 48%,rgba(217,83,79,.25) 48%,rgba(217,83,79,.25) 91%,transparent 91%); }
+  .lamp-1 { background-image:linear-gradient(transparent 48%,rgba(232,185,62,.32) 48%,rgba(232,185,62,.32) 91%,transparent 91%); }
+  .lamp-0 { background-image:linear-gradient(transparent 48%,rgba(92,160,92,.25) 48%,rgba(92,160,92,.25) 91%,transparent 91%); }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  [hidden] { display:none !important; }
+  @media(max-width:600px) {
+    header { padding:18px 16px 0; } .brand small { display:block; margin-left:0; }
+    .journal-nav { gap:5px; margin-top:20px; } .journal-nav a { min-width:0; flex:1; padding:9px 8px 7px; font-size:17px; }
+    .journal-nav a[aria-current="page"] { padding-inline:4px; }
+    .journal-nav a { padding-inline:4px; font-size:16px; white-space:nowrap; }
+    .box { padding:16px; } main { padding:18px 12px; }
+  }
+
+  .map-top { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+  .map-counts { margin:4px 0 12px; font-size:14px; }
+  .map-points { display:flex; flex-wrap:wrap; gap:8px 14px; font-size:14px; }
+
+  .filters { display:flex; flex-wrap:wrap; gap:12px; align-items:end; }
+  .filters label { display:flex; flex-direction:column; gap:4px; font-size:13px; }
+  .filters select, .filters button, .state button { min-height:40px; padding:6px 10px; border:1px solid var(--line); border-radius:4px; background:var(--paper); color:var(--ink); }
+  .filters .check { flex-direction:row; align-items:center; min-height:40px; }
+  .result-count { margin:14px 0 10px; color:var(--muted); font-size:13px; }
+  .notice { background:#fff4c4; border:1px solid #e8b93e; padding:10px 14px; margin-bottom:18px; border-radius:4px; }
+  .state { color:var(--muted); padding:12px 0; }
+  .state button { margin-left:8px; }
+  .wq-body { white-space:pre-wrap; overflow-wrap:anywhere; }
+  @media(max-width:900px) { .filters { display:grid; grid-template-columns:1fr 1fr; } .filters select { width:100%; } }
+</style></head><body>
+<header><div class="top"><div class="brand"><h1 style="font:inherit">错题</h1><small id="subtitle">错题本 · 未归档 — 条</small></div></div>
+<nav class="journal-nav" aria-label="主导航"><a href="/">总览</a><a href="/kb.html">知识树</a><a href="/wrong.html" aria-current="page">错题</a><a href="/papers.html">考卷</a><a href="/math.html">口算</a></nav></header>
+<main>
+  <div id="notice" class="notice" hidden>错题较多，仅展示最近 200 条</div>
+  <section class="box" aria-label="筛选错题">
+    <div class="filters">
+      <label>科目<select id="subject"><option value="">全部</option><option value="math">数学</option><option value="chinese">语文</option></select></label>
+      <label>状态<select id="status"><option value="">全部</option><option value="new">新错题</option><option value="learning">学过</option><option value="mastered">已掌握</option></select></label>
+      <label class="check"><input type="checkbox" id="stubborn"> 仅看顽固 🔥</label>
+      <label>知识点<select id="kp"><option value="">全部</option><option value="__none__">未挂知识点</option></select></label>
+      <button type="button" id="clear">清除筛选</button>
+    </div>
+  </section>
+  <section class="box" aria-label="错题列表"><div id="count" class="result-count" aria-live="polite"></div><div id="list" aria-live="polite">正在加载…</div></section>
+</main>
+<script>
+const STATUS = { learning: ['学过', 'b-learn'], mastered: ['已掌握', 'b-master'], new: ['新错题', 'b-new'] };
+const SUBJECT = { chinese:'语文', math:'数学' };
+const els = Object.fromEntries(['subject','status','stubborn','kp','clear','count','list','notice','subtitle'].map(id => [id, document.getElementById(id)]));
+let questions = [], total = 0;
+function esc(v){ return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function kps(q){ try { const v = JSON.parse(q.kp_names || '[]'); return Array.isArray(v) ? v.filter(x => typeof x === 'string' && x) : []; } catch(e) { return []; } }
+function clearFilters(){ els.subject.value=''; els.status.value=''; els.stubborn.checked=false; els.kp.value=''; history.replaceState(null, '', location.pathname); render(); }
+function render(){
+  const filtered = questions.filter(q => (!els.subject.value || q.subject_code === els.subject.value) && (!els.status.value || (q.status || 'new') === els.status.value) && (!els.stubborn.checked || !!q.stubborn) && (!els.kp.value || (els.kp.value === '__none__' ? !kps(q).length : kps(q).includes(els.kp.value))));
+  els.count.textContent = `当前结果 ${filtered.length} 条` + (total > questions.length ? '（仅在已加载错题中筛选）' : '');
+  if (!total) { els.list.innerHTML='<div class="state">还没有未归档错题，练习中产生错题后会显示在这里。</div>'; return; }
+  if (!filtered.length) { els.list.innerHTML='<div class="state">没有符合条件的错题。<button type="button" id="emptyClear">清除筛选</button></div>'; document.getElementById('emptyClear').addEventListener('click', clearFilters); return; }
+  els.list.innerHTML=filtered.map(q => { const st=STATUS[q.status] || STATUS.new, points=kps(q); return `<details class="wq"><summary>${q.stubborn ? '🔥 ' : ''}<span class="subj">${esc(SUBJECT[q.subject_code] || q.subject_code)}</span>${esc(q.title || '（无题名）')}<span class="badge ${st[1]}">${st[0]}</span></summary><div class="wq-body">${esc(q.stem)}${q.answer ? '<br><b>答案：</b>'+esc(q.answer) : ''}${q.analysis ? '<br><b>解析：</b>'+esc(q.analysis) : ''}<br><span class="empty">复习：对 ${esc(q.correct_count ?? 0)} / 错 ${esc(q.wrong_count ?? 0)}${q.last_wrong_at ? ' · 最近答错 '+esc(q.last_wrong_at.slice(0,10)) : ''}${points.length ? ' · '+points.map(esc).join('、') : ''}</span></div></details>`; }).join('');
+}
+async function load(){
+  els.list.textContent='正在加载…'; els.count.textContent='';
+  try {
+    const r=await fetch('/api/overview'); if(r.status===401){ location.href='/login'; return; } if(!r.ok) throw new Error('request failed');
+    const d=await r.json(); if(d.ok === false || !Array.isArray(d.wrong_questions)) throw new Error('invalid response');
+    questions=d.wrong_questions; total=Number(d.wq_total) || 0;
+    els.subtitle.textContent=`错题本 · 未归档 ${total} 条`; els.notice.hidden=total<=200;
+    const points=[...new Set(questions.flatMap(kps))]; els.kp.innerHTML='<option value="">全部</option><option value="__none__">未挂知识点</option>'+points.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+    const params=new URLSearchParams(location.search); const subject=params.get('subject'), kp=params.get('kp');
+    if(subject && [...els.subject.options].some(o => o.value===subject)) els.subject.value=subject;
+    if(kp && points.includes(kp)) els.kp.value=kp;
+    else if(kp){ const option=document.createElement('option'); option.value=kp; option.textContent=kp; els.kp.append(option); els.kp.value=kp; }
+    render();
+  } catch(e){ els.list.innerHTML='<div class="state">加载失败，请重试。<button type="button" id="retry">重试</button></div>'; document.getElementById('retry').addEventListener('click',load); }
+}
+for(const el of [els.subject,els.status,els.stubborn,els.kp]) el.addEventListener('change',render);
+els.clear.addEventListener('click',clearFilters); load();
+</script></body></html>

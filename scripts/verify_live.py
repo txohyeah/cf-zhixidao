@@ -214,6 +214,28 @@ if not MATH_ONLY:
     else:
         fails += 3  # 编辑/删除/确认三项无法执行
 
+    # ---- v12 错题页（wrong.html，2026-10-29 首页入口化；防的是只测总览漏了新页）----
+    s, d = fetch_text_retry('/wrong.html')
+    fails += not check('错题页(门禁内, 筛选/清除在页)', s == 200 and '错题' in d and 'api/overview' in d and '清除筛选' in d)
+
+    code = status_no_redirect('/wrong.html')
+    fails += not check('错题页未登录 302', code == 302, 'code=%s' % code)
+
+    s, d = fetch_text_retry('/')
+    fails += not check('总览-导航错题+摘要卡+代录直达(手风琴已拆)', s == 200 and '/wrong.html' in d
+                       and 'wrongSummary' in d and '/math.html#record' in d and 'renderWq' not in d)
+
+    def wrong_truth():
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from cf_d1 import find_db, execute_sql
+        db = find_db()
+        assert db, 'D1 zhixidao-db 不可达（错题总数对账基线取不到）'
+        return execute_sql(db, "SELECT COUNT(*) n FROM wrong_questions WHERE is_archived=0")[1][0]['n']
+    s, d = call('GET', '/api/overview')
+    n_db = wrong_truth()
+    fails += not check('错题-总数动态对账(overview vs D1)', s == 200 and d.get('wq_total') == n_db,
+                       'api=%s d1=%s' % (d.get('wq_total'), n_db))
+
 # ---- v10 口算记录 ----
 MATH_TEST_DATE = '2099-01-01'   # 固定测试日期：重入前先清，物理隔离不碰真数据
 
@@ -331,9 +353,14 @@ if not MATH_ONLY:
 
     s, d = call('GET', '/api/overview')
     wq = d.get('wrong_questions', [])
+    # 2026-10-29 起新契约：无对应知识点的错题有意挂 NULL（如"分类与整理"，树里暂无该节点），
+    # kp_names 仍进弱项榜——不再要求 100% 挂载；未挂题必须带有效 kp_names（不上树但不失踪）
     hang_api = sum(1 for w in wq if w.get('node_id'))
-    fails += not check('kb-错题挂载(overview带node_id %d/%d,对账D1)' % (hang_api, KB[3]),
-                       s == 200 and hang_api == KB[2] == KB[3], 'api挂载=%s D1挂载=%s' % (hang_api, KB[2]))
+    unhang = [w for w in wq if not w.get('node_id')]
+    unhang_kp_ok = all((w.get('kp_names') or '') not in ('', '[]') for w in unhang)
+    fails += not check('kb-错题挂载(overview对账D1 %d/%d;未挂须有kp_names)' % (hang_api, KB[3]),
+                       s == 200 and hang_api == KB[2] and hang_api + len(unhang) == KB[3] and unhang_kp_ok,
+                       'api挂载=%s D1挂载=%s 未挂=%d' % (hang_api, KB[2], len(unhang)))
     fails += not check('kb-弱项榜(实时聚合有数据)',
                        isinstance(d.get('weak_points'), list) and len(d['weak_points']) >= 1,
                        'n=%s' % len(d.get('weak_points', [])))

@@ -111,7 +111,8 @@
   @media(max-width:600px) {
     header { padding:18px 16px 0; } .brand small { display:block; margin-left:0; }
     .journal-nav { gap:5px; margin-top:20px; } .journal-nav a { min-width:0; flex:1; padding:9px 8px 7px; font-size:17px; }
-    .journal-nav a[aria-current="page"] { padding-inline:12px; }
+    .journal-nav a[aria-current="page"] { padding-inline:4px; }
+    .journal-nav a { padding-inline:4px; font-size:16px; white-space:nowrap; }
     .box { padding:16px; } main { padding:18px 12px; }
   }
 
@@ -133,6 +134,7 @@
   <nav class="journal-nav" aria-label="主导航">
     <a href="/">总览</a>
     <a href="/kb.html">知识树</a>
+    <a href="/wrong.html">错题</a>
     <a href="/papers.html" aria-current="page">考卷</a>
     <a href="/math.html">口算</a>
   </nav>

@@ -144,7 +144,8 @@
   @media(max-width:600px) {
     header { padding:18px 16px 0; } .brand small { display:block; margin-left:0; }
     .journal-nav { gap:5px; margin-top:20px; } .journal-nav a { min-width:0; flex:1; padding:9px 8px 7px; font-size:17px; }
-    .journal-nav a[aria-current="page"] { padding-inline:12px; }
+    .journal-nav a[aria-current="page"] { padding-inline:4px; }
+    .journal-nav a { padding-inline:4px; font-size:16px; white-space:nowrap; }
     .box { padding:16px; } main { padding:18px 12px; }
   }
 
@@ -170,6 +171,7 @@
   <nav class="journal-nav" aria-label="主导航">
     <a href="/" aria-current="page">总览</a>
     <a href="/kb.html">知识树</a>
+    <a href="/wrong.html">错题</a>
     <a href="/papers.html">考卷</a>
     <a href="/math.html">口算</a>
   </nav>
@@ -196,6 +198,17 @@
       </div>
     </div>
     <div class="col-side">
+      <div class="box">
+        <h2 style="display:flex;align-items:baseline;justify-content:space-between"><span>🧮 口算</span><span style="display:flex;gap:12px"><a href="/math.html" style="font-size:12px;color:var(--ink-blue);font-weight:400">全部口算记录 →</a></span></h2>
+        <div id="mathBox"></div>
+        <a href="/math.html#record" style="display:inline-block;margin-top:10px;padding:7px 12px;background:var(--ink-blue);color:var(--paper);border-radius:4px;text-decoration:none">📷 拍照代录</a>
+      </div>
+      <div class="box">
+        <h2>🔥 错题</h2>
+        <div id="wrongSummary"></div>
+        <div id="weakpoints" style="margin:8px 0;font-size:13px"></div>
+        <a href="/wrong.html">进错题本 →</a>
+      </div>
       <section class="box" id="knowledgeMap" hidden aria-label="知识地图摘要">
         <div class="map-top"><h2>知识地图</h2><a href="/kb.html">展开地图 →</a></div>
         <p class="map-counts" id="mapCounts"></p>
@@ -203,18 +216,8 @@
         <div class="map-points" id="mapPoints"></div>
       </section>
       <div class="box">
-        <h2>🔥 错题弱项 <small style="font-size:12px;color:var(--muted);font-weight:400">30 天错 ≥3 次打 🔥 · 点条目看题</small></h2>
-        <div class="kp-chips" id="weakpoints"></div>
-        <div id="wrongqs"></div>
-        <div class="wq-more" id="wqmore" style="display:none"><a id="wqToggle" href="javascript:void(0)" onclick="toggleWq()">展开全部 ▾</a></div>
-      </div>
-      <div class="box">
         <h2 style="display:flex;align-items:baseline;justify-content:space-between">考卷 · 最近 3 张<a href="/papers.html" style="font-size:12px;color:var(--ink-blue);font-weight:400">全部考卷 · 管理 →</a></h2>
         <div id="papers"></div>
-      </div>
-      <div class="box">
-        <h2 style="display:flex;align-items:baseline;justify-content:space-between"><span>🧮 口算</span><span style="display:flex;gap:12px"><a href="/math.html" style="font-size:12px;color:var(--ink-blue);font-weight:400">全部口算记录 →</a></span></h2>
-        <div id="mathBox"></div>
       </div>
       <div class="box">
         <h2><a href="/print.html">🖨 打印素材 →</a></h2>
@@ -282,13 +285,15 @@ async function load(){
       <div class="stat">尝试 <b>${l.attempts || 0}</b> 次 · 全对 <b>${l.passes || 0}</b> 次${l.last_pass ? ' · 最近全对 ' + l.last_pass : ''}</div>
     </div>`;
   }).join('');
-  // 错题弱项榜（v11：实时聚合；归档已在 SQL 过滤，默认只露 5 条防埋掉打卡区）
-  const wp = d.weak_points || [];
+  // 错题摘要：顽固数量来自当前已加载的错题。
+  const wq = d.wrong_questions || [];
+  const stubborn = wq.filter(q => q.stubborn).length;
+  const truncated = (d.wq_total || 0) > wq.length;
+  document.getElementById('wrongSummary').textContent = `未归档 ${d.wq_total || 0} 条` + (stubborn ? ` · 顽固 🔥${stubborn}${truncated ? '（已加载）' : ''}` : '');
+  const wp = (d.weak_points || []).slice(0, 3);
   document.getElementById('weakpoints').innerHTML = wp.length
-    ? wp.map(w => `<span class="kp">${esc(w.kp_name)} <b>${w.wrong_count || 0}</b> 错 · ${w.question_count} 题${w.stubborn_count ? ' 🔥' : ''}</span>`).join('')
-    : '<span class="empty">暂无弱项数据（练习答错后这里会亮起来）</span>';
-  window._wq = { list: (d.wrong_questions || []), total: d.wq_total || 0, all: false };
-  renderWq();
+    ? '弱项：' + wp.map(w => `<a href="/wrong.html?subject=${encodeURIComponent(w.subject_code || '')}&amp;kp=${encodeURIComponent(w.kp_name || '')}">${esc(w.kp_name)}</a>`).join(' · ')
+    : '<span class="empty">暂无弱项数据</span>';
   // 考卷摘要（overview 只回最近 3 张；折叠行式，点开看分析；全量管理在 /papers.html）
   const SUBJP = { chinese:'语文', math:'数学', english:'英语' };
   document.getElementById('papers').innerHTML = d.papers.length
@@ -302,28 +307,6 @@ async function load(){
        <span style="color:var(--muted);font-size:12px">${ml.duration_estimated?'≈':''}${mt(ml.duration_seconds||0)} · 对 ${ml.correct_count}/${ml.total_questions}（${Math.round(ml.correct_count/ml.total_questions*1000)/10}%）· 连续 ${d.math_streak} 天 · 共 ${d.math_total} 场</span></div>`
     : '<div class="empty">还没有口算记录</div>';
 }
-function renderWq(){
-  const { list, total, all } = window._wq;
-  const SHOW = 5;
-  const shown = all ? list : list.slice(0, SHOW);
-  const STATUS = { learning: ['学过', 'b-learn'], mastered: ['已掌握', 'b-master'], new: ['新错题', 'b-new'] };
-  const SUBJ = { chinese: '语文', math: '数学' };
-  function safeArr(s){ try { return JSON.parse(s || '[]'); } catch(e) { return []; } }
-  document.getElementById('wrongqs').innerHTML = shown.length
-    ? shown.map(q => {
-        const st = STATUS[q.status] || STATUS.new;
-        const kps = safeArr(q.kp_names);
-        return `<details class="wq"><summary>${q.stubborn ? '🔥' : ''}<span class="subj">${SUBJ[q.subject_code] || esc(q.subject_code)}</span>${esc(q.title || '（无题名）')}<span class="badge ${st[1]}">${st[0]}</span></summary>
-          <div class="wq-body">${esc(q.stem || '')}${q.answer ? '<br><b>答案：</b>' + esc(q.answer) : ''}${q.analysis ? '<br><b>解析：</b>' + esc(q.analysis) : ''}<br><span style="color:var(--muted);font-size:12px">复习：对 ${q.correct_count} / 错 ${q.wrong_count}${q.last_wrong_at ? ' · 最近答错 ' + q.last_wrong_at.slice(0,10) : ''}${kps.length ? ' · ' + kps.map(esc).join('、') : ''}</span></div></details>`;
-      }).join('')
-    : '<div class="empty">没有未归档错题</div>';
-  const more = document.getElementById('wqmore'), t = document.getElementById('wqToggle');
-  if (list.length > SHOW) {
-    more.style.display = '';
-    t.textContent = all ? '收起 ▴' : `展开全部 ${list.length} 条 ▾` + (total > list.length ? `（共 ${total} 条，仅显示最近 ${list.length} 条）` : '');
-  } else { more.style.display = 'none'; }
-}
-function toggleWq(){ window._wq.all = !window._wq.all; renderWq(); }
 function openPwd(){ document.getElementById('pwdMask').style.display='flex'; document.getElementById('pwdMsg').textContent=''; }
 function closePwd(){ document.getElementById('pwdMask').style.display='none'; }
 async function savePwd(){
